@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useProject } from '@/contexts/ProjectContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,7 +34,7 @@ const Index = () => {
   const costVariance = totalCost.actual - totalCost.estimated;
 
   // Define as cores para os gráficos
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
+  const CHART_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8834D8', '#82CA9D'];
 
   // Prepara os dados para o gráfico de pizza de custos por item EAP
   const costByWBS = wbsItems.map(item => ({
@@ -61,8 +62,6 @@ const Index = () => {
       Disponível: availableBudget
     }
   ];
-
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -215,7 +214,7 @@ const Index = () => {
                     dataKey="value"
                   >
                     {costByWBS.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(value) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />

@@ -17,7 +17,7 @@ const Phases = () => {
   const [editingPhase, setEditingPhase] = useState<ProjectPhase | null>(null);
   const [formData, setFormData] = useState({
     name: '',
-    status: 'nao-iniciado' as const,
+    status: 'nao-iniciado' as ProjectPhase['status'],
     responsible: '',
     startDate: '',
     endDate: '',
@@ -51,7 +51,7 @@ const Phases = () => {
   const resetForm = () => {
     setFormData({
       name: '',
-      status: 'nao-iniciado' as const,
+      status: 'nao-iniciado' as ProjectPhase['status'],
       responsible: '',
       startDate: '',
       endDate: '',

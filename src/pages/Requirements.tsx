@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useProject } from '@/contexts/ProjectContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,19 +11,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Edit, Trash2, FileText, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
+import { Requirement } from '@/types/project';
 
 const Requirements = () => {
   const { requirements, addRequirement, updateRequirement, deleteRequirement, phases, wbsItems } = useProject();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingRequirement, setEditingRequirement] = useState(null);
+  const [editingRequirement, setEditingRequirement] = useState<Requirement | null>(null);
   const [activeTab, setActiveTab] = useState('all');
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Omit<Requirement, 'id' | 'createdAt' | 'updatedAt'>>({
     code: '',
     title: '',
     description: '',
-    category: 'funcional',
-    priority: 'media',
-    status: 'rascunho',
+    category: 'funcional' as Requirement['category'],
+    priority: 'media' as Requirement['priority'],
+    status: 'rascunho' as Requirement['status'],
     source: '',
     responsible: '',
     stakeholder: '',
@@ -35,7 +35,7 @@ const Requirements = () => {
     traceability: []
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (editingRequirement) {
@@ -70,20 +70,20 @@ const Requirements = () => {
     setEditingRequirement(null);
   };
 
-  const handleEdit = (requirement) => {
+  const handleEdit = (requirement: Requirement) => {
     setEditingRequirement(requirement);
     setFormData({ ...requirement });
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = (id: string) => {
     if (confirm('Tem certeza que deseja deletar este requisito?')) {
       deleteRequirement(id);
       toast.success('Requisito deletado com sucesso!');
     }
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: Requirement['status']) => {
     const colors = {
       'rascunho': 'bg-gray-100 text-gray-800',
       'aprovado': 'bg-green-100 text-green-800',
@@ -96,7 +96,7 @@ const Requirements = () => {
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
-  const getPriorityColor = (priority) => {
+  const getPriorityColor = (priority: Requirement['priority']) => {
     const colors = {
       'baixa': 'bg-green-100 text-green-800',
       'media': 'bg-yellow-100 text-yellow-800',
@@ -153,7 +153,7 @@ const Requirements = () => {
                 </div>
                 <div>
                   <Label htmlFor="category">Categoria *</Label>
-                  <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                  <Select value={formData.category} onValueChange={(value: Requirement['category']) => setFormData({ ...formData, category: value })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -161,7 +161,7 @@ const Requirements = () => {
                       <SelectItem value="funcional">Funcional</SelectItem>
                       <SelectItem value="nao-funcional">Não Funcional</SelectItem>
                       <SelectItem value="negocio">Negócio</SelectItem>
-                      <SelectItem value="tecnico">Técnico</SelectItem>
+                      <SelectItem value="tecnico">Técnicos</SelectItem>
                       <SelectItem value="qualidade">Qualidade</SelectItem>
                       <SelectItem value="restricao">Restrição</SelectItem>
                     </SelectContent>
@@ -193,7 +193,7 @@ const Requirements = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="priority">Prioridade</Label>
-                  <Select value={formData.priority} onValueChange={(value) => setFormData({ ...formData, priority: value })}>
+                  <Select value={formData.priority} onValueChange={(value: Requirement['priority']) => setFormData({ ...formData, priority: value })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -207,7 +207,7 @@ const Requirements = () => {
                 </div>
                 <div>
                   <Label htmlFor="status">Status</Label>
-                  <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+                  <Select value={formData.status} onValueChange={(value: Requirement['status']) => setFormData({ ...formData, status: value })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
