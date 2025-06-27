@@ -27,6 +27,9 @@ export interface WBSItem {
   hourlyRate: number;
   estimatedCost: number;
   actualCost: number;
+  contractType: 'horas' | 'valor-fixo' | 'consultoria-projeto';
+  contractValue?: number; // Para valor fixo ou consultoria
+  contractDuration?: number; // Para consultoria (em meses)
   createdAt: string;
 }
 
@@ -181,4 +184,57 @@ export interface ScopeValidation {
   attachments?: string[];
   createdAt: string;
   updatedAt: string;
+}
+
+// Novos tipos para TAP e Ciclo de Vida
+export interface ProjectCharter {
+  id: string;
+  projectName: string;
+  projectManager: string;
+  sponsor: string;
+  businessJustification: string;
+  projectObjectives: string[];
+  highLevelRequirements: string[];
+  assumptions: string[];
+  constraints: string[];
+  risks: string[];
+  budget: number;
+  timeline: string;
+  stakeholders: string[];
+  successCriteria: string[];
+  approvedBy: string;
+  approvalDate: string;
+  version: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProjectLifecycle {
+  id: string;
+  currentPhase: string;
+  phases: {
+    name: string;
+    status: 'nao-iniciado' | 'em-andamento' | 'concluido';
+    startDate?: string;
+    endDate?: string;
+    deliverables: string[];
+    gatesCriteria: string[];
+  }[];
+  methodology: 'tradicional' | 'agil' | 'hibrido';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ScheduleItem {
+  id: string;
+  wbsCode: string;
+  taskName: string;
+  duration: number;
+  startDate: string;
+  endDate: string;
+  predecessors: string[];
+  resources: string[];
+  progress: number;
+  status: 'nao-iniciado' | 'em-andamento' | 'concluido' | 'atrasado';
+  createdAt: string;
 }

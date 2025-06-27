@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Eye, Edit, Play, Trash2 } from "lucide-react";
+import { Plus, Eye, Edit, Play, Trash2, DollarSign } from "lucide-react";
 import { Link } from "react-router-dom";
 import WBSItemDialog from "@/components/WBSItemDialog";
 import {
@@ -21,7 +21,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 
 const WBS = () => {
-  const { phases, wbsItems, getWBSItemsByPhase, getWBSProgress, deleteWBSItem, addTask } = useProject();
+  const { phases, wbsItems, getWBSItemsByPhase, getWBSProgress, deleteWBSItem, addTask, calculateWBSCost } = useProject();
   const { toast } = useToast();
 
   const handleDeleteWBSItem = (itemId: string) => {
@@ -52,6 +52,28 @@ const WBS = () => {
       title: "Tarefa gerada com sucesso",
       description: "Uma nova tarefa foi criada a partir deste item EAP.",
     });
+  };
+
+  const getContractTypeLabel = (type: string) => {
+    switch (type) {
+      case 'valor-fixo':
+        return 'Valor Fixo';
+      case 'consultoria-projeto':
+        return 'Consultoria';
+      default:
+        return 'Por Horas';
+    }
+  };
+
+  const getContractTypeColor = (type: string) => {
+    switch (type) {
+      case 'valor-fixo':
+        return 'bg-green-100 text-green-800';
+      case 'consultoria-projeto':
+        return 'bg-blue-100 text-blue-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
 
   return (
@@ -104,6 +126,7 @@ const WBS = () => {
                 <div className="grid gap-4">
                   {phaseItems.map((item) => {
                     const progress = getWBSProgress(item.id);
+                    const cost = calculateWBSCost(item);
                     
                     return (
                       <Card key={item.id} className="border border-gray-100">
@@ -115,11 +138,17 @@ const WBS = () => {
                                   {item.code}
                                 </span>
                                 <h3 className="font-semibold">{item.activity}</h3>
+                                <Badge className={getContractTypeColor(item.contractType)}>
+                                  {getContractTypeLabel(item.contractType)}
+                                </Badge>
                               </div>
                               <div className="space-y-2">
                                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                   <span>Responsável: {item.responsible}</span>
                                   <span>Dias após início: {item.daysAfterStart}</span>
+                                  {item.contractType === 'consultoria-projeto' && item.contractDuration && (
+                                    <span>Duração: {item.contractDuration} meses</span>
+                                  )}
                                 </div>
                                 <div className="flex items-center gap-4">
                                   <div className="flex-1">
@@ -131,13 +160,26 @@ const WBS = () => {
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-4 text-sm">
-                                  <span className="text-muted-foreground">
-                                    Custo Estimado: R$ {item.estimatedCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                  <span className="text-muted-foreground flex items-center gap-1">
+                                    <DollarSign className="h-3 w-3" />
+                                    Custo Estimado: R$ {cost.estimated.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                   </span>
-                                  <span className="text-muted-foreground">
-                                    Custo Real: R$ {item.actualCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                  <span className="text-muted-foreground flex items-center gap-1">
+                                    <DollarSign className="h-3 w-3" />
+                                    Custo Real: R$ {cost.actual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                   </span>
                                 </div>
+                                {/* Detalhes do tipo de contrato */}
+                                {item.contractType !== 'horas' && (
+                                  <div className="text-sm text-muted-foreground">
+                                    {item.contractType === 'valor-fixo' && (
+                                      <span>Valor do Contrato: R$ {(item.contractValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                    )}
+                                    {item.contractType === 'consultoria-projeto' && (
+                                      <span>Valor da Consultoria: R$ {(item.contractValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             </div>
                             <div className="flex items-center gap-2 ml-4">

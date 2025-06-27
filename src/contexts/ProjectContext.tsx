@@ -12,8 +12,12 @@ import {
   WBSDictionary,
   Requirement,
   ScopeStatement,
-  ScopeValidation
+  ScopeValidation,
+  ProjectCharter,
+  ProjectLifecycle,
+  ScheduleItem
 } from '@/types/project';
+import { WBSCodeGenerator } from '@/utils/wbsCodeGenerator';
 
 interface ProjectContextType {
   phases: ProjectPhase[];
@@ -29,6 +33,9 @@ interface ProjectContextType {
   requirements: Requirement[];
   scopeStatement: ScopeStatement[];
   scopeValidations: ScopeValidation[];
+  projectCharter: ProjectCharter[];
+  projectLifecycle: ProjectLifecycle[];
+  scheduleItems: ScheduleItem[];
   
   // Phase operations
   addPhase: (phase: Omit<ProjectPhase, 'id' | 'createdAt'>) => void;
@@ -87,6 +94,19 @@ interface ProjectContextType {
   updateScopeValidation: (id: string, updates: Partial<ScopeValidation>) => void;
   deleteScopeValidation: (id: string) => void;
   
+  // Project Charter operations
+  addProjectCharter: (charter: Omit<ProjectCharter, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  updateProjectCharter: (id: string, updates: Partial<ProjectCharter>) => void;
+  
+  // Project Lifecycle operations
+  addProjectLifecycle: (lifecycle: Omit<ProjectLifecycle, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  updateProjectLifecycle: (id: string, updates: Partial<ProjectLifecycle>) => void;
+  
+  // Schedule operations
+  addScheduleItem: (item: Omit<ScheduleItem, 'id' | 'createdAt'>) => void;
+  updateScheduleItem: (id: string, updates: Partial<ScheduleItem>) => void;
+  deleteScheduleItem: (id: string) => void;
+  
   // Helper functions
   getWBSItemsByPhase: (phaseId: string) => WBSItem[];
   getSubTasksByWBS: (wbsItemId: string) => WBSSubTask[];
@@ -95,6 +115,7 @@ interface ProjectContextType {
   getTotalProjectCost: () => { estimated: number; actual: number };
   getProjectDuration: () => number;
   getProjectDurationType: () => string;
+  calculateWBSCost: (item: WBSItem) => { estimated: number; actual: number };
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
@@ -121,6 +142,9 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [scopeStatement, setScopeStatement] = useState<ScopeStatement[]>([]);
   const [scopeValidations, setScopeValidations] = useState<ScopeValidation[]>([]);
+  const [projectCharter, setProjectCharter] = useState<ProjectCharter[]>([]);
+  const [projectLifecycle, setProjectLifecycle] = useState<ProjectLifecycle[]>([]);
+  const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
 
   // Load initial data
   useEffect(() => {
@@ -142,6 +166,9 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     loadData('project-requirements', setRequirements);
     loadData('project-scope-statement', setScopeStatement);
     loadData('project-scope-validations', setScopeValidations);
+    loadData('project-charter', setProjectCharter);
+    loadData('project-lifecycle', setProjectLifecycle);
+    loadData('project-schedule-items', setScheduleItems);
   }, []);
 
   // Save data when changed
@@ -158,6 +185,9 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => { localStorage.setItem('project-requirements', JSON.stringify(requirements)); }, [requirements]);
   useEffect(() => { localStorage.setItem('project-scope-statement', JSON.stringify(scopeStatement)); }, [scopeStatement]);
   useEffect(() => { localStorage.setItem('project-scope-validations', JSON.stringify(scopeValidations)); }, [scopeValidations]);
+  useEffect(() => { localStorage.setItem('project-charter', JSON.stringify(projectCharter)); }, [projectCharter]);
+  useEffect(() => { localStorage.setItem('project-lifecycle', JSON.stringify(projectLifecycle)); }, [projectLifecycle]);
+  useEffect(() => { localStorage.setItem('project-schedule-items', JSON.stringify(scheduleItems)); }, [scheduleItems]);
 
   // Phase operations
   const addPhase = (phase: Omit<ProjectPhase, 'id' | 'createdAt'>) => {
@@ -179,10 +209,13 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setPhases(prev => prev.filter(phase => phase.id !== id));
   };
 
-  // WBS operations
+  // WBS operations with automatic code generation
   const addWBSItem = (item: Omit<WBSItem, 'id' | 'createdAt'>) => {
+    const code = item.code || WBSCodeGenerator.generateWBSCode(item.phaseId, phases, wbsItems);
     const newItem: WBSItem = {
       ...item,
+      code,
+      contractType: item.contractType || 'horas',
       id: Date.now().toString(),
       createdAt: new Date().toISOString()
     };
@@ -398,6 +431,81 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setScopeValidations(prev => prev.filter(validation => validation.id !== id));
   };
 
+  // Project Charter operations
+  const addProjectCharter = (charter: Omit<ProjectCharter, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newCharter: ProjectCharter = {
+      ...charter,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    setProjectCharter([newCharter]);
+  };
+
+  const updateProjectCharter = (id: string, updates: Partial<ProjectCharter>) => {
+    setProjectCharter(prev => prev.map(charter => 
+      charter.id === id ? { ...charter, ...updates } : charter
+    ));
+  };
+
+  // Project Lifecycle operations
+  const addProjectLifecycle = (lifecycle: Omit<ProjectLifecycle, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newLifecycle: ProjectLifecycle = {
+      ...lifecycle,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    setProjectLifecycle([newLifecycle]);
+  };
+
+  const updateProjectLifecycle = (id: string, updates: Partial<ProjectLifecycle>) => {
+    setProjectLifecycle(prev => prev.map(lifecycle => 
+      lifecycle.id === id ? { ...lifecycle, ...updates } : lifecycle
+    ));
+  };
+
+  // Schedule operations
+  const addScheduleItem = (item: Omit<ScheduleItem, 'id' | 'createdAt'>) => {
+    const newItem: ScheduleItem = {
+      ...item,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString()
+    };
+    setScheduleItems(prev => [...prev, newItem]);
+  };
+
+  const updateScheduleItem = (id: string, updates: Partial<ScheduleItem>) => {
+    setScheduleItems(prev => prev.map(item => 
+      item.id === id ? { ...item, ...updates } : item
+    ));
+  };
+
+  const deleteScheduleItem = (id: string) => {
+    setScheduleItems(prev => prev.filter(item => item.id !== id));
+  };
+
+  // Enhanced cost calculation for different contract types
+  const calculateWBSCost = (item: WBSItem) => {
+    switch (item.contractType) {
+      case 'valor-fixo':
+        return {
+          estimated: item.contractValue || 0,
+          actual: item.actualCost
+        };
+      case 'consultoria-projeto':
+        return {
+          estimated: item.contractValue || 0,
+          actual: item.actualCost
+        };
+      default: // 'horas'
+        return {
+          estimated: item.estimatedHours * item.hourlyRate,
+          actual: item.actualHours * item.hourlyRate
+        };
+    }
+  };
+
   // Helper functions
   const getWBSItemsByPhase = (phaseId: string) => {
     return wbsItems.filter(item => item.phaseId === phaseId);
@@ -412,18 +520,30 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const getWBSProgress = (wbsItemId: string) => {
-    const itemSubTasks = getSubTasksByWBS(wbsItemId);
+    const itemSubTasks = subTasks.filter(subTask => subTask.wbsItemId === wbsItemId);
     if (itemSubTasks.length === 0) return 0;
     const completedCount = itemSubTasks.filter(st => st.completed).length;
     return Math.round((completedCount / itemSubTasks.length) * 100);
   };
 
   const getTotalProjectCost = () => {
-    const estimated = costItems.reduce((sum, item) => sum + item.estimatedCost, 0) + 
-                    wbsItems.reduce((sum, item) => sum + item.estimatedCost, 0);
-    const actual = costItems.reduce((sum, item) => sum + item.actualCost, 0) + 
-                  wbsItems.reduce((sum, item) => sum + item.actualCost, 0);
-    return { estimated, actual };
+    const wbsCosts = wbsItems.reduce((sum, item) => {
+      const cost = calculateWBSCost(item);
+      return {
+        estimated: sum.estimated + cost.estimated,
+        actual: sum.actual + cost.actual
+      };
+    }, { estimated: 0, actual: 0 });
+    
+    const costItemsCosts = costItems.reduce((sum, item) => ({
+      estimated: sum.estimated + item.estimatedCost,
+      actual: sum.actual + item.actualCost
+    }), { estimated: 0, actual: 0 });
+    
+    return {
+      estimated: wbsCosts.estimated + costItemsCosts.estimated,
+      actual: wbsCosts.actual + costItemsCosts.actual
+    };
   };
 
   const getProjectDuration = () => {
@@ -435,7 +555,13 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const getProjectDurationType = () => {
-    const duration = getProjectDuration();
+    const duration = (() => {
+      if (projectData.length === 0) return 0;
+      const project = projectData[0];
+      const start = new Date(project.estimatedStartDate);
+      const end = new Date(project.estimatedEndDate);
+      return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    })();
     if (duration <= 15) return 'curto';
     if (duration <= 50) return 'medio';
     if (duration <= 60) return 'longo';
@@ -457,6 +583,9 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
       requirements,
       scopeStatement,
       scopeValidations,
+      projectCharter,
+      projectLifecycle,
+      scheduleItems,
       addPhase,
       updatePhase,
       deletePhase,
@@ -490,13 +619,21 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
       addScopeValidation,
       updateScopeValidation,
       deleteScopeValidation,
+      addProjectCharter,
+      updateProjectCharter,
+      addProjectLifecycle,
+      updateProjectLifecycle,
+      addScheduleItem,
+      updateScheduleItem,
+      deleteScheduleItem,
       getWBSItemsByPhase,
       getSubTasksByWBS,
       getTasksByWBS,
       getWBSProgress,
       getTotalProjectCost,
       getProjectDuration,
-      getProjectDurationType
+      getProjectDurationType,
+      calculateWBSCost
     }}>
       {children}
     </ProjectContext.Provider>

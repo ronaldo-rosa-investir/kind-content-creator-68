@@ -19,6 +19,9 @@ import WBSDictionaryPage from "./pages/WBSDictionary";
 import Requirements from "./pages/Requirements";
 import ScopeStatement from "./pages/ScopeStatement";
 import ScopeValidation from "./pages/ScopeValidation";
+import ProjectCharter from "./pages/ProjectCharter";
+import ProjectLifecycle from "./pages/ProjectLifecycle";
+import Schedule from "./pages/Schedule";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +36,9 @@ const App = () => (
           <Layout>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/tap" element={<ProjectCharter />} />
+              <Route path="/ciclo-vida" element={<ProjectLifecycle />} />
+              <Route path="/cronograma" element={<Schedule />} />
               <Route path="/fases" element={<Phases />} />
               <Route path="/eap" element={<WBS />} />
               <Route path="/eap/:id" element={<WBSDetail />} />
