@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   ProjectPhase, 
@@ -10,7 +9,10 @@ import {
   ClosureChecklist, 
   ProjectData, 
   TeamMember, 
-  WBSDictionary 
+  WBSDictionary,
+  Requirement,
+  ScopeStatement,
+  ScopeValidation
 } from '@/types/project';
 
 interface ProjectContextType {
@@ -24,6 +26,9 @@ interface ProjectContextType {
   projectData: ProjectData[];
   teamMembers: TeamMember[];
   wbsDictionary: WBSDictionary[];
+  requirements: Requirement[];
+  scopeStatement: ScopeStatement[];
+  scopeValidations: ScopeValidation[];
   
   // Phase operations
   addPhase: (phase: Omit<ProjectPhase, 'id' | 'createdAt'>) => void;
@@ -68,6 +73,20 @@ interface ProjectContextType {
   updateWBSDictionary: (id: string, updates: Partial<WBSDictionary>) => void;
   deleteWBSDictionary: (id: string) => void;
   
+  // Requirements operations
+  addRequirement: (requirement: Omit<Requirement, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  updateRequirement: (id: string, updates: Partial<Requirement>) => void;
+  deleteRequirement: (id: string) => void;
+  
+  // Scope Statement operations
+  addScopeStatement: (statement: Omit<ScopeStatement, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  updateScopeStatement: (id: string, updates: Partial<ScopeStatement>) => void;
+  
+  // Scope Validation operations
+  addScopeValidation: (validation: Omit<ScopeValidation, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  updateScopeValidation: (id: string, updates: Partial<ScopeValidation>) => void;
+  deleteScopeValidation: (id: string) => void;
+  
   // Helper functions
   getWBSItemsByPhase: (phaseId: string) => WBSItem[];
   getSubTasksByWBS: (wbsItemId: string) => WBSSubTask[];
@@ -99,6 +118,9 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [projectData, setProjectData] = useState<ProjectData[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [wbsDictionary, setWBSDictionary] = useState<WBSDictionary[]>([]);
+  const [requirements, setRequirements] = useState<Requirement[]>([]);
+  const [scopeStatement, setScopeStatement] = useState<ScopeStatement[]>([]);
+  const [scopeValidations, setScopeValidations] = useState<ScopeValidation[]>([]);
 
   // Load initial data
   useEffect(() => {
@@ -117,6 +139,9 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     loadData('project-data', setProjectData);
     loadData('project-team-members', setTeamMembers);
     loadData('project-wbs-dictionary', setWBSDictionary);
+    loadData('project-requirements', setRequirements);
+    loadData('project-scope-statement', setScopeStatement);
+    loadData('project-scope-validations', setScopeValidations);
   }, []);
 
   // Save data when changed
@@ -130,6 +155,9 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => { localStorage.setItem('project-data', JSON.stringify(projectData)); }, [projectData]);
   useEffect(() => { localStorage.setItem('project-team-members', JSON.stringify(teamMembers)); }, [teamMembers]);
   useEffect(() => { localStorage.setItem('project-wbs-dictionary', JSON.stringify(wbsDictionary)); }, [wbsDictionary]);
+  useEffect(() => { localStorage.setItem('project-requirements', JSON.stringify(requirements)); }, [requirements]);
+  useEffect(() => { localStorage.setItem('project-scope-statement', JSON.stringify(scopeStatement)); }, [scopeStatement]);
+  useEffect(() => { localStorage.setItem('project-scope-validations', JSON.stringify(scopeValidations)); }, [scopeValidations]);
 
   // Phase operations
   const addPhase = (phase: Omit<ProjectPhase, 'id' | 'createdAt'>) => {
@@ -311,6 +339,65 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setWBSDictionary(prev => prev.filter(dict => dict.id !== id));
   };
 
+  // Requirements operations
+  const addRequirement = (requirement: Omit<Requirement, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newRequirement: Requirement = {
+      ...requirement,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    setRequirements(prev => [...prev, newRequirement]);
+  };
+
+  const updateRequirement = (id: string, updates: Partial<Requirement>) => {
+    setRequirements(prev => prev.map(req => 
+      req.id === id ? { ...req, ...updates } : req
+    ));
+  };
+
+  const deleteRequirement = (id: string) => {
+    setRequirements(prev => prev.filter(req => req.id !== id));
+  };
+
+  // Scope Statement operations
+  const addScopeStatement = (statement: Omit<ScopeStatement, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newStatement: ScopeStatement = {
+      ...statement,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    setScopeStatement([newStatement]);
+  };
+
+  const updateScopeStatement = (id: string, updates: Partial<ScopeStatement>) => {
+    setScopeStatement(prev => prev.map(statement => 
+      statement.id === id ? { ...statement, ...updates } : statement
+    ));
+  };
+
+  // Scope Validation operations
+  const addScopeValidation = (validation: Omit<ScopeValidation, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newValidation: ScopeValidation = {
+      ...validation,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    setScopeValidations(prev => [...prev, newValidation]);
+  };
+
+  const updateScopeValidation = (id: string, updates: Partial<ScopeValidation>) => {
+    setScopeValidations(prev => prev.map(validation => 
+      validation.id === id ? { ...validation, ...updates } : validation
+    ));
+  };
+
+  const deleteScopeValidation = (id: string) => {
+    setScopeValidations(prev => prev.filter(validation => validation.id !== id));
+  };
+
   // Helper functions
   const getWBSItemsByPhase = (phaseId: string) => {
     return wbsItems.filter(item => item.phaseId === phaseId);
@@ -367,6 +454,9 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
       projectData,
       teamMembers,
       wbsDictionary,
+      requirements,
+      scopeStatement,
+      scopeValidations,
       addPhase,
       updatePhase,
       deletePhase,
@@ -392,6 +482,14 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
       addWBSDictionary,
       updateWBSDictionary,
       deleteWBSDictionary,
+      addRequirement,
+      updateRequirement,
+      deleteRequirement,
+      addScopeStatement,
+      updateScopeStatement,
+      addScopeValidation,
+      updateScopeValidation,
+      deleteScopeValidation,
       getWBSItemsByPhase,
       getSubTasksByWBS,
       getTasksByWBS,

@@ -127,3 +127,58 @@ export interface WBSDictionary {
   constraints: string;
   createdAt: string;
 }
+
+// Novos tipos para PMBOK
+export interface Requirement {
+  id: string;
+  code: string;
+  title: string;
+  description: string;
+  category: 'funcional' | 'nao-funcional' | 'negocio' | 'tecnico' | 'qualidade' | 'restricao';
+  priority: 'baixa' | 'media' | 'alta' | 'critica';
+  status: 'rascunho' | 'aprovado' | 'rejeitado' | 'em-analise' | 'implementado' | 'testado' | 'validado';
+  source: string;
+  responsible: string;
+  stakeholder: string;
+  acceptanceCriteria: string;
+  businessRule?: string;
+  phaseId?: string;
+  wbsItemId?: string;
+  traceability: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ScopeStatement {
+  id: string;
+  projectObjective: string;
+  productDescription: string;
+  deliverables: string[];
+  acceptanceCriteria: string;
+  constraints: string[];
+  assumptions: string[];
+  exclusions: string[];
+  approvedBy: string;
+  approvalDate: string;
+  version: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ScopeValidation {
+  id: string;
+  deliverableId: string;
+  deliverableName: string;
+  description: string;
+  acceptanceCriteria: string;
+  validationMethod: 'inspecao' | 'teste' | 'demonstracao' | 'revisao' | 'auditoria';
+  responsible: string;
+  stakeholder: string;
+  plannedDate: string;
+  actualDate?: string;
+  status: 'planejado' | 'em-andamento' | 'aprovado' | 'rejeitado' | 'pendente';
+  comments?: string;
+  attachments?: string[];
+  createdAt: string;
+  updatedAt: string;
+}

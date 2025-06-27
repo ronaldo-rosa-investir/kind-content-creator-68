@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useProject } from '@/contexts/ProjectContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,16 +7,17 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Calendar, Clock, User, Plus, Trash2, Edit } from 'lucide-react';
+import { Plus, Trash2, Edit } from 'lucide-react';
 import { toast } from 'sonner';
+import { ProjectPhase } from '@/types/project';
 
 const Phases = () => {
   const { phases, addPhase, updatePhase, deletePhase, addWBSItem } = useProject();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingPhase, setEditingPhase] = useState(null);
+  const [editingPhase, setEditingPhase] = useState<ProjectPhase | null>(null);
   const [formData, setFormData] = useState({
     name: '',
-    status: 'nao-iniciado',
+    status: 'nao-iniciado' as const,
     responsible: '',
     startDate: '',
     endDate: '',
@@ -25,7 +26,7 @@ const Phases = () => {
     actualCost: 0
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingPhase) {
       updatePhase(editingPhase.id, formData);
@@ -50,7 +51,7 @@ const Phases = () => {
   const resetForm = () => {
     setFormData({
       name: '',
-      status: 'nao-iniciado',
+      status: 'nao-iniciado' as const,
       responsible: '',
       startDate: '',
       endDate: '',
@@ -61,7 +62,7 @@ const Phases = () => {
     setEditingPhase(null);
   };
 
-  const handleEdit = (phase) => {
+  const handleEdit = (phase: ProjectPhase) => {
     setEditingPhase(phase);
     setFormData({
       name: phase.name,
@@ -76,14 +77,14 @@ const Phases = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = (id: string) => {
     if (confirm('Tem certeza que deseja deletar esta fase?')) {
       deletePhase(id);
       toast.success('Fase deletada com sucesso!');
     }
   };
 
-  const createSampleWBSItems = (phaseId) => {
+  const createSampleWBSItems = (phaseId: string) => {
     const sampleItems = [
       {
         code: '1.1',
@@ -134,7 +135,7 @@ const Phases = () => {
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="status" className="text-right">Status</Label>
-                <Select value={formData.status} onValueChange={value => setFormData({ ...formData, status: value })}>
+                <Select value={formData.status} onValueChange={(value: ProjectPhase['status']) => setFormData({ ...formData, status: value })}>
                   <SelectTrigger className="col-span-3">
                     <SelectValue placeholder="Selecione um status" />
                   </SelectTrigger>
