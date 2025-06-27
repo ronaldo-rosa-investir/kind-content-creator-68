@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageCircle, Plus, Calendar, Users, Bell, Mail, Phone, Video } from "lucide-react";
+import { MessageCircle, Plus, Calendar, Users, Bell, Mail, Phone, Video, BarChart3 } from "lucide-react";
 
 export default function ProjectCommunications() {
   const { projectId } = useParams();

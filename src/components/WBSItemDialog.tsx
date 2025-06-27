@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useProject } from "@/contexts/ProjectContext";
 import { Button } from "@/components/ui/button";
@@ -46,7 +45,7 @@ const WBSItemDialog = ({ trigger, wbsItem, onSave }: WBSItemDialogProps) => {
     hourlyRate: 0,
     estimatedCost: 0,
     actualCost: 0,
-    contractType: 'horas' as const,
+    contractType: 'horas' as 'horas' | 'valor-fixo' | 'consultoria-projeto',
     contractValue: 0,
     contractDuration: 0,
   });
@@ -86,7 +85,7 @@ const WBSItemDialog = ({ trigger, wbsItem, onSave }: WBSItemDialogProps) => {
         hourlyRate: 0,
         estimatedCost: 0,
         actualCost: 0,
-        contractType: 'horas' as const,
+        contractType: 'horas' as 'horas' | 'valor-fixo' | 'consultoria-projeto',
         contractValue: 0,
         contractDuration: 0,
       });

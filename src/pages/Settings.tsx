@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings, User, Users, Database, FileText } from "lucide-react";
+import { Settings as SettingsIcon, User, Users, Database, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function Settings() {
@@ -51,7 +51,7 @@ export default function Settings() {
               <p className="text-gray-600 mb-4">{section.description}</p>
               <Button asChild className="w-full">
                 <Link to={section.url}>
-                  <Settings className="h-4 w-4 mr-2" />
+                  <SettingsIcon className="h-4 w-4 mr-2" />
                   Acessar Configurações
                 </Link>
               </Button>
