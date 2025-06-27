@@ -19,7 +19,32 @@ import {
 } from '@/types/project';
 import { WBSCodeGenerator } from '@/utils/wbsCodeGenerator';
 
+// Tipo para projeto na lista
+interface ProjectItem {
+  id: number;
+  name: string;
+  client: string;
+  status: string;
+  startDate: string;
+  endDate: string;
+  budget: number;
+  spent?: number;
+  progress: number;
+  manager: string;
+}
+
 interface ProjectContextType {
+  // Estado central de navegação
+  currentView: string;
+  activeProject: ProjectItem | null;
+  projects: ProjectItem[];
+  
+  // Funções de navegação
+  setCurrentView: (view: string) => void;
+  openProject: (project: ProjectItem) => void;
+  closeProject: () => void;
+  
+  // Estado atual do projeto
   phases: ProjectPhase[];
   wbsItems: WBSItem[];
   subTasks: WBSSubTask[];
@@ -129,6 +154,61 @@ export const useProject = () => {
 };
 
 export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Estado central de navegação
+  const [currentView, setCurrentView] = useState('dashboard');
+  const [activeProject, setActiveProject] = useState<ProjectItem | null>(null);
+  const [projects, setProjects] = useState<ProjectItem[]>([
+    {
+      id: 1,
+      name: "Sistema ERP Corporativo",
+      client: "Empresa ABC Ltda",
+      status: "Em Andamento",
+      startDate: "2024-01-15",
+      endDate: "2024-08-15",
+      budget: 120000,
+      spent: 90000,
+      progress: 75,
+      manager: "João Silva"
+    },
+    {
+      id: 2,
+      name: "Aplicativo Mobile E-commerce",
+      client: "Tech Solutions Inc",
+      status: "Planejamento",
+      startDate: "2024-03-01",
+      endDate: "2024-09-30",
+      budget: 80000,
+      spent: 20000,
+      progress: 25,
+      manager: "Maria Santos"
+    },
+    {
+      id: 3,
+      name: "Migração para Cloud AWS",
+      client: "StartUp Inovadora",
+      status: "Em Andamento",
+      startDate: "2024-02-10",
+      endDate: "2024-07-20",
+      budget: 200000,
+      spent: 120000,
+      progress: 60,
+      manager: "Pedro Costa"
+    },
+    {
+      id: 4,
+      name: "Portal do Cliente",
+      client: "Empresa ABC Ltda",
+      status: "Concluído",
+      startDate: "2024-01-01",
+      endDate: "2024-06-15",
+      budget: 95000,
+      spent: 92000,
+      progress: 100,
+      manager: "Ana Oliveira"
+    },
+  ]);
+
+  // Estados do projeto atual
   const [phases, setPhases] = useState<ProjectPhase[]>([]);
   const [wbsItems, setWBSItems] = useState<WBSItem[]>([]);
   const [subTasks, setSubTasks] = useState<WBSSubTask[]>([]);
@@ -145,6 +225,17 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [projectCharter, setProjectCharter] = useState<ProjectCharter[]>([]);
   const [projectLifecycle, setProjectLifecycle] = useState<ProjectLifecycle[]>([]);
   const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
+
+  // Funções de navegação
+  const openProject = (project: ProjectItem) => {
+    setActiveProject(project);
+    setCurrentView('project-dashboard');
+  };
+
+  const closeProject = () => {
+    setActiveProject(null);
+    setCurrentView('dashboard');
+  };
 
   // Load initial data
   useEffect(() => {
@@ -570,6 +661,15 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   return (
     <ProjectContext.Provider value={{
+      // Estado central
+      currentView,
+      activeProject,
+      projects,
+      setCurrentView,
+      openProject,
+      closeProject,
+      
+      // Estados do projeto
       phases,
       wbsItems,
       subTasks,
@@ -586,6 +686,8 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
       projectCharter,
       projectLifecycle,
       scheduleItems,
+      
+      // Operações CRUD
       addPhase,
       updatePhase,
       deletePhase,
@@ -626,6 +728,8 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
       addScheduleItem,
       updateScheduleItem,
       deleteScheduleItem,
+      
+      // Funções auxiliares
       getWBSItemsByPhase,
       getSubTasksByWBS,
       getTasksByWBS,

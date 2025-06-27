@@ -2,26 +2,29 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { FolderOpen, Users, DollarSign, Calendar, TrendingUp, AlertTriangle } from "lucide-react";
+import { useProject } from "@/contexts/ProjectContext";
 
 export default function Dashboard() {
-  // Mock data para demonstração
+  const { projects, openProject } = useProject();
+
+  // Calcular estatísticas automaticamente dos dados reais
   const stats = {
-    totalProjects: 12,
-    activeProjects: 8,
-    completedProjects: 4,
-    totalBudget: 850000,
-    usedBudget: 620000,
-    totalTeamMembers: 45,
-    overdueProjects: 2
+    totalProjects: projects.length,
+    activeProjects: projects.filter(p => p.status === 'Em Andamento').length,
+    completedProjects: projects.filter(p => p.status === 'Concluído').length,
+    totalBudget: projects.reduce((sum, p) => sum + p.budget, 0),
+    usedBudget: projects.reduce((sum, p) => sum + (p.spent || 0), 0),
+    totalTeamMembers: projects.length * 5, // Estimativa baseada nos projetos
+    overdueProjects: projects.filter(p => {
+      const endDate = new Date(p.endDate);
+      const today = new Date();
+      return p.status !== 'Concluído' && endDate < today;
+    }).length
   };
 
-  const recentProjects = [
-    { id: 1, name: "Sistema ERP", status: "Em Andamento", progress: 75, budget: 120000, deadline: "2024-08-15" },
-    { id: 2, name: "App Mobile", status: "Planejamento", progress: 25, budget: 80000, deadline: "2024-09-30" },
-    { id: 3, name: "Migração Cloud", status: "Em Andamento", progress: 60, budget: 200000, deadline: "2024-07-20" },
-    { id: 4, name: "Portal Cliente", status: "Concluído", progress: 100, budget: 95000, deadline: "2024-06-15" },
-  ];
+  const recentProjects = projects.slice(0, 4);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -31,6 +34,10 @@ export default function Dashboard() {
       case "Atrasado": return "bg-red-100 text-red-800";
       default: return "bg-gray-100 text-gray-800";
     }
+  };
+
+  const handleProjectClick = (project: any) => {
+    openProject(project);
   };
 
   return (
@@ -113,14 +120,20 @@ export default function Dashboard() {
               <div key={project.id} className="flex items-center justify-between p-4 border rounded-lg">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-semibold">{project.name}</h3>
+                    <Button
+                      variant="link"
+                      className="p-0 h-auto font-semibold text-left"
+                      onClick={() => handleProjectClick(project)}
+                    >
+                      {project.name}
+                    </Button>
                     <Badge className={getStatusColor(project.status)}>
                       {project.status}
                     </Badge>
                   </div>
                   <div className="flex items-center gap-4 text-sm text-gray-500">
                     <span>Orçamento: R$ {project.budget.toLocaleString('pt-BR')}</span>
-                    <span>Prazo: {new Date(project.deadline).toLocaleDateString('pt-BR')}</span>
+                    <span>Prazo: {new Date(project.endDate).toLocaleDateString('pt-BR')}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">

@@ -12,6 +12,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 import {
   Home,
   FolderOpen,
@@ -33,9 +34,11 @@ import {
   Target,
   Shield,
   Briefcase,
+  ArrowLeft,
 } from "lucide-react";
+import { useProject } from "@/contexts/ProjectContext";
 
-// Navegação Global (sempre visível)
+// Navegação Global (quando não há projeto ativo)
 const globalNavItems = [
   { title: "Dashboard Geral", url: "/dashboard", icon: Home },
   { title: "Meus Projetos", url: "/projetos", icon: FolderOpen },
@@ -44,9 +47,9 @@ const globalNavItems = [
   { title: "Configurações", url: "/config", icon: Settings },
 ];
 
-// Navegação Contextual do Projeto (só aparece dentro de um projeto)
+// Navegação Contextual do Projeto (quando há projeto ativo)
 const projectNavItems = [
-  { title: "Dashboard do Projeto", url: "/dashboard", icon: BarChart3 },
+  { title: "Dashboard do Projeto", url: "/dashboard-projeto", icon: BarChart3 },
   { title: "TAP", url: "/tap", icon: Briefcase },
   { title: "Ciclo de Vida", url: "/ciclo-vida", icon: Target },
   { title: "Cronograma", url: "/cronograma", icon: Calendar },
@@ -66,21 +69,13 @@ const projectNavItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
+  const { activeProject, currentView, closeProject, setCurrentView } = useProject();
   const currentPath = location.pathname;
 
-  // Verificar se estamos em um projeto específico (rotas contextuais)
-  const isInProjectContext = currentPath.match(/^\/projetos\/\d+\//) || 
-    (!currentPath.startsWith('/dashboard') && 
-     !currentPath.startsWith('/projetos') && 
-     !currentPath.startsWith('/clientes') && 
-     !currentPath.startsWith('/relatorios') && 
-     !currentPath.startsWith('/config') &&
-     currentPath !== '/');
-
   const isActive = (path: string) => {
-    if (isInProjectContext) {
-      // Para contexto de projeto, comparar apenas a parte final da URL
-      return currentPath.endsWith(path) || (path === '/dashboard' && currentPath === '/');
+    if (activeProject) {
+      // Para contexto de projeto, comparar com a view atual
+      return currentView === path.replace('/', '');
     } else {
       // Para navegação global, comparar URL completa
       return currentPath === path;
@@ -92,10 +87,20 @@ export function AppSidebar() {
 
   const isCollapsed = state === "collapsed";
 
+  const handleNavigation = (path: string) => {
+    if (activeProject) {
+      setCurrentView(path.replace('/', ''));
+    }
+  };
+
+  const handleBackToProjects = () => {
+    closeProject();
+  };
+
   return (
     <Sidebar className={isCollapsed ? "w-14" : "w-60"} collapsible="icon">
       <SidebarContent>
-        {!isInProjectContext ? (
+        {!activeProject ? (
           // Navegação Global
           <SidebarGroup>
             <SidebarGroupLabel>Navegação Principal</SidebarGroupLabel>
@@ -122,26 +127,36 @@ export function AppSidebar() {
           <>
             <SidebarGroup>
               <SidebarGroupLabel>
-                <Link to="/projetos" className="text-sm text-muted-foreground hover:text-primary">
-                  ← Voltar aos Projetos
-                </Link>
+                <Button
+                  variant="link"
+                  onClick={handleBackToProjects}
+                  className="text-sm text-muted-foreground hover:text-primary p-0 h-auto"
+                >
+                  <ArrowLeft className="h-3 w-3 mr-1" />
+                  Voltar aos Projetos
+                </Button>
               </SidebarGroupLabel>
             </SidebarGroup>
             
             <SidebarGroup>
-              <SidebarGroupLabel>Dentro do Projeto</SidebarGroupLabel>
+              <SidebarGroupLabel>
+                {!isCollapsed && (
+                  <div className="text-xs">
+                    <div className="font-medium truncate">{activeProject.name}</div>
+                    <div className="text-muted-foreground">{activeProject.client}</div>
+                  </div>
+                )}
+              </SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
                   {projectNavItems.map((item) => (
                     <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
-                        <Link
-                          to={item.url}
-                          className={getNavClassName(isActive(item.url))}
-                        >
-                          <item.icon className="mr-2 h-4 w-4" />
-                          {!isCollapsed && <span>{item.title}</span>}
-                        </Link>
+                      <SidebarMenuButton
+                        onClick={() => handleNavigation(item.url)}
+                        className={getNavClassName(isActive(item.url))}
+                      >
+                        <item.icon className="mr-2 h-4 w-4" />
+                        {!isCollapsed && <span>{item.title}</span>}
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}

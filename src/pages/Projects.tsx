@@ -6,60 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Filter, Eye, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, Filter, Edit, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useProject } from "@/contexts/ProjectContext";
 
 export default function Projects() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
-
-  // Mock data para demonstração
-  const projects = [
-    {
-      id: 1,
-      name: "Sistema ERP Corporativo",
-      client: "Empresa ABC Ltda",
-      status: "Em Andamento",
-      startDate: "2024-01-15",
-      endDate: "2024-08-15",
-      budget: 120000,
-      progress: 75,
-      manager: "João Silva"
-    },
-    {
-      id: 2,
-      name: "Aplicativo Mobile E-commerce",
-      client: "Tech Solutions Inc",
-      status: "Planejamento",
-      startDate: "2024-03-01",
-      endDate: "2024-09-30",
-      budget: 80000,
-      progress: 25,
-      manager: "Maria Santos"
-    },
-    {
-      id: 3,
-      name: "Migração para Cloud AWS",
-      client: "StartUp Inovadora",
-      status: "Em Andamento",
-      startDate: "2024-02-10",
-      endDate: "2024-07-20",
-      budget: 200000,
-      progress: 60,
-      manager: "Pedro Costa"
-    },
-    {
-      id: 4,
-      name: "Portal do Cliente",
-      client: "Empresa ABC Ltda",
-      status: "Concluído",
-      startDate: "2024-01-01",
-      endDate: "2024-06-15",
-      budget: 95000,
-      progress: 100,
-      manager: "Ana Oliveira"
-    },
-  ];
+  const { projects, openProject } = useProject();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -78,6 +32,10 @@ export default function Projects() {
     const matchesStatus = statusFilter === "todos" || project.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const handleProjectClick = (project: any) => {
+    openProject(project);
+  };
 
   return (
     <div className="space-y-6">
@@ -152,7 +110,15 @@ export default function Projects() {
             <TableBody>
               {filteredProjects.map((project) => (
                 <TableRow key={project.id}>
-                  <TableCell className="font-medium">{project.name}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="link"
+                      className="p-0 h-auto font-medium text-left"
+                      onClick={() => handleProjectClick(project)}
+                    >
+                      {project.name}
+                    </Button>
+                  </TableCell>
                   <TableCell>{project.client}</TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(project.status)}>
@@ -166,11 +132,6 @@ export default function Projects() {
                   <TableCell>{project.progress}%</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link to="/">
-                          <Eye className="h-4 w-4" />
-                        </Link>
-                      </Button>
                       <Button variant="ghost" size="sm" asChild>
                         <Link to="/">
                           <Edit className="h-4 w-4" />
