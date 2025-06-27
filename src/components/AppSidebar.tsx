@@ -1,6 +1,6 @@
 
 import { NavLink, useLocation } from "react-router-dom";
-import { Calendar, List, Check, Home } from "lucide-react";
+import { Calendar, List, Check, Home, DollarSign, BookOpen, ClipboardCheck, Users, FileText } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -17,6 +17,11 @@ const items = [
   { title: "Fases do Projeto", url: "/fases", icon: Calendar },
   { title: "Itens EAP", url: "/eap", icon: List },
   { title: "Tarefas", url: "/tarefas", icon: Check },
+  { title: "Gestão de Custos", url: "/custos", icon: DollarSign },
+  { title: "Lições Aprendidas", url: "/licoes", icon: BookOpen },
+  { title: "Checklist Fechamento", url: "/fechamento", icon: ClipboardCheck },
+  { title: "Equipe", url: "/equipe", icon: Users },
+  { title: "Dicionário EAP", url: "/dicionario", icon: FileText },
 ];
 
 export function AppSidebar() {

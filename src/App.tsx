@@ -11,6 +11,9 @@ import Phases from "./pages/Phases";
 import WBS from "./pages/WBS";
 import WBSDetail from "./pages/WBSDetail";
 import Tasks from "./pages/Tasks";
+import CostManagement from "./pages/CostManagement";
+import LessonsLearned from "./pages/LessonsLearned";
+import ClosureChecklist from "./pages/ClosureChecklist";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +32,9 @@ const App = () => (
               <Route path="/eap" element={<WBS />} />
               <Route path="/eap/:id" element={<WBSDetail />} />
               <Route path="/tarefas" element={<Tasks />} />
+              <Route path="/custos" element={<CostManagement />} />
+              <Route path="/licoes" element={<LessonsLearned />} />
+              <Route path="/fechamento" element={<ClosureChecklist />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
