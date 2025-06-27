@@ -1,6 +1,6 @@
 
-import { NavLink, useLocation, useParams } from "react-router-dom";
-import { Calendar, List, Check, Home, DollarSign, BookOpen, ClipboardCheck, Users, FileText, FolderOpen, UserCircle, BarChart3, Settings, MessageCircle, AlertTriangle } from "lucide-react";
+import { useState } from "react";
+import { useLocation, Link } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -10,157 +10,144 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
-import { Badge } from "@/components/ui/badge";
+import {
+  Home,
+  FolderOpen,
+  Users,
+  FileText,
+  Settings,
+  Plus,
+  BarChart3,
+  Calendar,
+  ListTodo,
+  DollarSign,
+  AlertTriangle,
+  FileStack,
+  MessageSquare,
+  BookOpen,
+  CheckSquare,
+  UserCheck,
+  Network,
+  Target,
+  Shield,
+  Briefcase,
+} from "lucide-react";
 
-const globalItems = [
-  { title: "Dashboard", url: "/dashboard", icon: Home },
+// Navegação Global (sempre visível)
+const globalNavItems = [
+  { title: "Dashboard Geral", url: "/dashboard", icon: Home },
   { title: "Meus Projetos", url: "/projetos", icon: FolderOpen },
-  { title: "Clientes", url: "/clientes", icon: UserCircle },
-  { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
+  { title: "Clientes", url: "/clientes", icon: Users },
+  { title: "Relatórios", url: "/relatorios", icon: FileText },
   { title: "Configurações", url: "/config", icon: Settings },
 ];
 
-const projectItems = [
-  { title: "Dashboard do Projeto", url: "/dashboard", icon: Home },
-  { title: "TAP", url: "/tap", icon: FileText },
-  { title: "Fases do Projeto", url: "/fases", icon: Calendar },
-  { title: "EAP", url: "/eap", icon: List },
-  { title: "Tarefas", url: "/tarefas", icon: Check },
+// Navegação Contextual do Projeto (só aparece dentro de um projeto)
+const projectNavItems = [
+  { title: "Dashboard do Projeto", url: "/dashboard", icon: BarChart3 },
+  { title: "TAP", url: "/tap", icon: Briefcase },
+  { title: "Ciclo de Vida", url: "/ciclo-vida", icon: Target },
+  { title: "Cronograma", url: "/cronograma", icon: Calendar },
+  { title: "Fases", url: "/fases", icon: Network },
+  { title: "EAP", url: "/eap", icon: ListTodo },
+  { title: "Tarefas", url: "/tarefas", icon: CheckSquare },
   { title: "Custos", url: "/custos", icon: DollarSign },
-  { title: "Riscos", url: "/riscos", icon: AlertTriangle },
-  { title: "Documentos", url: "/documentos", icon: FileText },
-  { title: "Comunicações", url: "/comunicacoes", icon: MessageCircle },
-];
-
-// Legacy project items (mantidos para compatibilidade)
-const legacyProjectItems = [
-  { title: "Lições Aprendidas", url: "/licoes", icon: BookOpen },
-  { title: "Checklist Fechamento", url: "/fechamento", icon: ClipboardCheck },
-  { title: "Equipe", url: "/equipe", icon: Users },
-  { title: "Dicionário EAP", url: "/dicionario", icon: FileText },
+  { title: "Equipe", url: "/equipe", icon: UserCheck },
+  { title: "Dicionário EAP", url: "/dicionario", icon: BookOpen },
+  { title: "Requisitos", url: "/requisitos", icon: FileStack },
+  { title: "Escopo", url: "/escopo", icon: Target },
+  { title: "Validação", url: "/validacao", icon: Shield },
+  { title: "Lições Aprendidas", url: "/licoes", icon: MessageSquare },
+  { title: "Checklist Fechamento", url: "/fechamento", icon: CheckSquare },
 ];
 
 export function AppSidebar() {
+  const { collapsed } = useSidebar();
   const location = useLocation();
-  const params = useParams();
   const currentPath = location.pathname;
-  const projectId = params.projectId;
+
+  // Verificar se estamos em um projeto específico (rotas contextuais)
+  const isInProjectContext = currentPath.match(/^\/projetos\/\d+\//) || 
+    (!currentPath.startsWith('/dashboard') && 
+     !currentPath.startsWith('/projetos') && 
+     !currentPath.startsWith('/clientes') && 
+     !currentPath.startsWith('/relatorios') && 
+     !currentPath.startsWith('/config') &&
+     currentPath !== '/');
 
   const isActive = (path: string) => {
-    if (path === "/") return currentPath === "/";
-    return currentPath === path || currentPath.startsWith(path);
+    if (isInProjectContext) {
+      // Para contexto de projeto, comparar apenas a parte final da URL
+      return currentPath.endsWith(path) || (path === '/dashboard' && currentPath === '/');
+    } else {
+      // Para navegação global, comparar URL completa
+      return currentPath === path;
+    }
   };
 
-  const isProjectContext = currentPath.includes('/projetos/') && projectId;
+  const getNavClassName = (active: boolean) =>
+    active ? "bg-muted text-primary font-medium" : "hover:bg-muted/50";
 
   return (
-    <Sidebar className="w-64 bg-white border-r border-gray-200" collapsible="offcanvas">
-      <SidebarContent className="bg-white">
-        <div className="p-6 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-green-600 rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold">PM</span>
-            </div>
-            <div>
-              <h2 className="font-semibold text-gray-900">ProjectManager</h2>
-              <p className="text-xs text-gray-500">PMBOK Edition</p>
-            </div>
-          </div>
-        </div>
-        
-        <SidebarGroup className="px-4 py-4">
-          <SidebarGroupLabel className="text-gray-700 font-medium mb-2">
-            Navegação Global
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {globalItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      className={({ isActive: navIsActive }) =>
-                        `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                          navIsActive || isActive(item.url)
-                            ? "bg-blue-50 text-blue-700 border-l-4 border-blue-600 font-medium"
-                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                        }`
-                      }
-                    >
-                      <item.icon className="h-5 w-5" />
-                      <span className="font-medium">{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {isProjectContext && (
-          <SidebarGroup className="px-4 py-4">
-            <SidebarGroupLabel className="text-gray-700 font-medium mb-2 flex items-center justify-between">
-              <span>Projeto Atual</span>
-              <Badge variant="outline" className="text-xs">ID: {projectId}</Badge>
-            </SidebarGroupLabel>
+    <Sidebar className={collapsed ? "w-14" : "w-60"} collapsible>
+      <SidebarContent>
+        {!isInProjectContext ? (
+          // Navegação Global
+          <SidebarGroup>
+            <SidebarGroupLabel>Navegação Principal</SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
-                {projectItems.map((item) => {
-                  const fullUrl = `/projetos/${projectId}${item.url}`;
-                  return (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
-                        <NavLink
-                          to={fullUrl}
-                          className={({ isActive: navIsActive }) =>
-                            `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                              navIsActive || isActive(fullUrl)
-                                ? "bg-green-50 text-green-700 border-l-4 border-green-600 font-medium"
-                                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                            }`
-                          }
-                        >
-                          <item.icon className="h-5 w-5" />
-                          <span className="font-medium">{item.title}</span>
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
+              <SidebarMenu>
+                {globalNavItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <Link
+                        to={item.url}
+                        className={getNavClassName(isActive(item.url))}
+                      >
+                        <item.icon className="mr-2 h-4 w-4" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+        ) : (
+          // Navegação Contextual do Projeto
+          <>
+            <SidebarGroup>
+              <SidebarGroupLabel>
+                <Link to="/projetos" className="text-sm text-muted-foreground hover:text-primary">
+                  ← Voltar aos Projetos
+                </Link>
+              </SidebarGroupLabel>
+            </SidebarGroup>
+            
+            <SidebarGroup>
+              <SidebarGroupLabel>Dentro do Projeto</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {projectNavItems.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton asChild>
+                        <Link
+                          to={item.url}
+                          className={getNavClassName(isActive(item.url))}
+                        >
+                          <item.icon className="mr-2 h-4 w-4" />
+                          {!collapsed && <span>{item.title}</span>}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
         )}
-
-        <SidebarGroup className="px-4 py-4">
-          <SidebarGroupLabel className="text-gray-700 font-medium mb-2">
-            {isProjectContext ? "Ferramentas Extras" : "Projeto Demo"}
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {(isProjectContext ? legacyProjectItems : [...projectItems, ...legacyProjectItems]).map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      className={({ isActive: navIsActive }) =>
-                        `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                          navIsActive || isActive(item.url)
-                            ? "bg-green-50 text-green-700 border-l-4 border-green-600 font-medium"
-                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                        }`
-                      }
-                    >
-                      <item.icon className="h-5 w-5" />
-                      <span className="font-medium">{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
       </SidebarContent>
     </Sidebar>
   );

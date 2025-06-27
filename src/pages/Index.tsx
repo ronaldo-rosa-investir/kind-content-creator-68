@@ -11,15 +11,10 @@ import { Link } from 'react-router-dom';
 const Index = () => {
   const { phases, wbsItems, tasks, costItems, requirements, scopeStatement, scopeValidations, getTotalProjectCost, projectCharter } = useProject();
 
-  // Calcular custos das fases
-  const getTotalPhasesCost = () => {
-    const estimated = phases.reduce((total, phase) => total + phase.estimatedCost, 0);
-    const actual = phases.reduce((total, phase) => total + phase.actualCost, 0);
-    return { estimated, actual };
-  };
-
-  // Verificar TAP
+  // Calcular estatísticas básicas de forma mais realista
   const currentTAP = projectCharter.length > 0 ? projectCharter[0] : null;
+  
+  // Verificar se o TAP tem os campos essenciais preenchidos
   const isTAPComplete = currentTAP ? !!(
     currentTAP.projectName && 
     currentTAP.sponsors && 
@@ -28,59 +23,53 @@ const Index = () => {
     currentTAP.estimatedEndDate &&
     currentTAP.projectObjectives &&
     currentTAP.businessDemand &&
-    currentTAP.projectScope &&
-    currentTAP.projectNotScope &&
-    currentTAP.stakeholders &&
-    currentTAP.existingProjectsInterface &&
-    currentTAP.constraints &&
-    currentTAP.assumptions &&
-    currentTAP.estimatedBudget &&
-    currentTAP.basicTeam?.length > 0 &&
-    currentTAP.sponsorSignatures?.length > 0
+    currentTAP.projectScope
   ) : false;
 
-  const totalStats = {
-    phases: phases.length,
-    wbsItems: wbsItems.length,
-    tasks: tasks.length,
-    completedTasks: tasks.filter(task => task.completed).length,
-    requirements: requirements.length,
-    approvedRequirements: requirements.filter(req => req.status === 'aprovado').length,
-    scopeValidations: scopeValidations.length,
-    approvedValidations: scopeValidations.filter(val => val.status === 'aprovado').length,
-    totalCost: getTotalProjectCost(),
-    phasesCost: getTotalPhasesCost()
-  };
+  // Estatísticas principais
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter(task => task.completed).length;
+  const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
-  const completionRate = totalStats.tasks > 0 ? (totalStats.completedTasks / totalStats.tasks) * 100 : 0;
-  const requirementsApprovalRate = totalStats.requirements > 0 ? (totalStats.approvedRequirements / totalStats.requirements) * 100 : 0;
+  const totalRequirements = requirements.length;
+  const approvedRequirements = requirements.filter(req => req.status === 'aprovado').length;
+  const requirementsApprovalRate = totalRequirements > 0 ? (approvedRequirements / totalRequirements) * 100 : 0;
 
-  // Define as cores para os gráficos
+  const totalValidations = scopeValidations.length;
+  const approvedValidations = scopeValidations.filter(val => val.status === 'aprovado').length;
+
+  // Calcular custos de forma mais precisa
+  const projectCosts = getTotalProjectCost();
+  const phasesCosts = phases.reduce((acc, phase) => ({
+    estimated: acc.estimated + phase.estimatedCost,
+    actual: acc.actual + phase.actualCost
+  }), { estimated: 0, actual: 0 });
+
+  // Usar orçamento do TAP como referência principal
+  const projectBudget = currentTAP?.estimatedBudget || 150000; // Valor padrão apenas se não houver TAP
+  const totalActualCost = projectCosts.actual + phasesCosts.actual;
+  const totalEstimatedCost = projectCosts.estimated + phasesCosts.estimated;
+  const budgetUsed = (totalActualCost / projectBudget) * 100;
+  const remainingBudget = projectBudget - totalActualCost;
+
+  // Preparar dados para gráficos (apenas se houver dados)
   const CHART_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8834D8', '#82CA9D'];
 
-  // Prepara os dados para o gráfico de pizza de custos por item EAP
-  const costByWBS = wbsItems.map(item => ({
-    name: `${item.code} - ${item.activity.substring(0, 20)}...`,
-    value: item.actualCost || item.estimatedCost,
-    estimated: item.estimatedCost,
-    actual: item.actualCost
-  })).filter(item => item.value > 0);
+  const costByWBS = wbsItems
+    .filter(item => item.actualCost > 0 || item.estimatedCost > 0)
+    .map(item => ({
+      name: `${item.code} - ${item.activity.substring(0, 20)}${item.activity.length > 20 ? '...' : ''}`,
+      value: item.actualCost || item.estimatedCost,
+      estimated: item.estimatedCost,
+      actual: item.actualCost
+    }));
 
-  // Usar orçamento do TAP se disponível, senão usar o máximo entre custo das fases e um valor padrão
-  const totalBudget = currentTAP?.estimatedBudget || Math.max(150000, totalStats.phasesCost.estimated);
-  const totalActualCost = totalStats.totalCost.actual + totalStats.phasesCost.actual;
-  const availableBudget = totalBudget - totalActualCost;
-  const budgetProgress = (totalActualCost / totalBudget) * 100;
-
-  // Prepara os dados para o gráfico de barras de orçamento
-  const budgetData = [
-    {
-      name: 'Orçamento',
-      Orçamento: totalBudget,
-      Consumido: totalActualCost,
-      Disponível: availableBudget
-    }
-  ];
+  const budgetData = [{
+    name: 'Orçamento',
+    'Orçamento Total': projectBudget,
+    'Custo Real': totalActualCost,
+    'Disponível': remainingBudget
+  }];
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -94,7 +83,7 @@ const Index = () => {
         </Link>
       </div>
 
-      {/* Seção do TAP */}
+      {/* Status do TAP */}
       <Card className={`border-2 ${isTAPComplete ? 'border-green-200 bg-green-50' : 'border-orange-200 bg-orange-50'}`}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -122,20 +111,13 @@ const Index = () => {
                   <p className="font-semibold">{currentTAP.projectName || 'Não definido'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Orçamento TAP</p>
+                  <p className="text-sm text-muted-foreground">Orçamento Aprovado</p>
                   <p className="font-semibold text-blue-700">
-                    R$ {currentTAP.estimatedBudget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    R$ {projectBudget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
               </>
             )}
-          </div>
-          <div className="mt-4">
-            <Link to="/tap">
-              <Button size="sm" variant={isTAPComplete ? "outline" : "default"}>
-                {currentTAP ? (isTAPComplete ? 'Ver TAP' : 'Completar TAP') : 'Criar TAP'}
-              </Button>
-            </Link>
           </div>
         </CardContent>
       </Card>
@@ -144,14 +126,46 @@ const Index = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Fases</CardTitle>
+            <CardTitle className="text-sm font-medium">Fases do Projeto</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalStats.phases}</div>
-            <p className="text-xs text-muted-foreground">Total de fases</p>
+            <div className="text-2xl font-bold">{phases.length}</div>
+            <p className="text-xs text-muted-foreground">Fases planejadas</p>
             <Link to="/fases">
-              <Button variant="link" size="sm" className="p-0 h-auto">Ver detalhes</Button>
+              <Button variant="link" size="sm" className="p-0 h-auto">Ver fases</Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Progresso das Tarefas</CardTitle>
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{completedTasks}/{totalTasks}</div>
+            <p className="text-xs text-muted-foreground">{completionRate.toFixed(1)}% concluídas</p>
+            <Progress value={completionRate} className="mt-2" />
+            <Link to="/tarefas">
+              <Button variant="link" size="sm" className="p-0 h-auto">Ver tarefas</Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Uso do Orçamento</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{budgetUsed.toFixed(1)}%</div>
+            <p className="text-xs text-muted-foreground">
+              R$ {totalActualCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} de R$ {projectBudget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </p>
+            <Progress value={budgetUsed} className="mt-2" />
+            <Link to="/custos">
+              <Button variant="link" size="sm" className="p-0 h-auto">Ver custos</Button>
             </Link>
           </CardContent>
         </Card>
@@ -162,41 +176,16 @@ const Index = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalStats.wbsItems}</div>
-            <p className="text-xs text-muted-foreground">Estrutura analítica</p>
+            <div className="text-2xl font-bold">{wbsItems.length}</div>
+            <p className="text-xs text-muted-foreground">Pacotes de trabalho</p>
             <Link to="/eap">
-              <Button variant="link" size="sm" className="p-0 h-auto">Ver detalhes</Button>
+              <Button variant="link" size="sm" className="p-0 h-auto">Ver EAP</Button>
             </Link>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tarefas</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalStats.completedTasks}/{totalStats.tasks}</div>
-            <p className="text-xs text-muted-foreground">{completionRate.toFixed(1)}% concluídas</p>
-            <Link to="/tarefas">
-              <Button variant="link" size="sm" className="p-0 h-auto">Ver detalhes</Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Progresso Geral</CardTitle>
-            <AlertCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{completionRate.toFixed(1)}%</div>
-            <Progress value={completionRate} className="mt-2" />
           </CardContent>
         </Card>
       </div>
 
-      {/* Seção PMBOK - Gestão de Escopo */}
+      {/* Gestão de Escopo */}
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Gestão de Escopo (PMBOK)</h2>
         
@@ -207,11 +196,11 @@ const Index = () => {
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalStats.approvedRequirements}/{totalStats.requirements}</div>
+              <div className="text-2xl font-bold">{approvedRequirements}/{totalRequirements}</div>
               <p className="text-xs text-muted-foreground">{requirementsApprovalRate.toFixed(1)}% aprovados</p>
               <Progress value={requirementsApprovalRate} className="mt-2" />
               <Link to="/requisitos">
-                <Button variant="link" size="sm" className="p-0 h-auto mt-2">Gerenciar requisitos</Button>
+                <Button variant="link" size="sm" className="p-0 h-auto mt-2">Gerenciar</Button>
               </Link>
             </CardContent>
           </Card>
@@ -222,13 +211,13 @@ const Index = () => {
               <Target className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{scopeStatement.length}</div>
+              <div className="text-2xl font-bold">{scopeStatement.length > 0 ? '1' : '0'}</div>
               <p className="text-xs text-muted-foreground">
                 {scopeStatement.length > 0 ? 'Definida' : 'Não definida'}
               </p>
               <Link to="/escopo">
                 <Button variant="link" size="sm" className="p-0 h-auto mt-2">
-                  {scopeStatement.length > 0 ? 'Ver escopo' : 'Definir escopo'}
+                  {scopeStatement.length > 0 ? 'Ver' : 'Definir'}
                 </Button>
               </Link>
             </CardContent>
@@ -236,136 +225,58 @@ const Index = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Validação do Escopo</CardTitle>
+              <CardTitle className="text-sm font-medium">Validações</CardTitle>
               <Shield className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalStats.approvedValidations}/{totalStats.scopeValidations}</div>
+              <div className="text-2xl font-bold">{approvedValidations}/{totalValidations}</div>
               <p className="text-xs text-muted-foreground">Entregas validadas</p>
               <Link to="/validacao">
-                <Button variant="link" size="sm" className="p-0 h-auto mt-2">Gerenciar validações</Button>
+                <Button variant="link" size="sm" className="p-0 h-auto mt-2">Gerenciar</Button>
               </Link>
             </CardContent>
           </Card>
         </div>
       </div>
 
-      {/* Seção de Custos */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Gestão de Custos</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Custo Estimado (Fases)</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                R$ {totalStats.phasesCost.estimated.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </div>
-              <p className="text-xs text-muted-foreground">Planejado nas fases</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Custo Real (Total)</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                R$ {totalActualCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </div>
-              <p className="text-xs text-muted-foreground">Executado</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Orçamento Total</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                R$ {totalBudget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {currentTAP ? 'Do TAP' : 'Estimado'}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Valor Disponível</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                R$ {availableBudget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </div>
-              <p className="text-xs text-muted-foreground">Restante</p>
-              <Link to="/custos">
-                <Button variant="link" size="sm" className="p-0 h-auto">Ver detalhes</Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Progresso do Orçamento */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Progresso do Orçamento</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Orçamento Consumido</span>
-                <span>{budgetProgress.toFixed(1)}%</span>
-              </div>
-              <Progress value={budgetProgress} className="h-3" />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>R$ {totalActualCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                <span>R$ {totalBudget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Gráficos */}
-        {costByWBS.length > 0 && (
+      {/* Análise de Custos */}
+      {(costByWBS.length > 0 || totalActualCost > 0) && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Análise Financeira</h2>
+          
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Distribuição de Custos por Item EAP</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={costByWBS}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {costByWBS.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+            {costByWBS.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Custos por Item EAP</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={costByWBS}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {costByWBS.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
 
             <Card>
               <CardHeader>
-                <CardTitle>Orçamento: Consumido vs Disponível</CardTitle>
+                <CardTitle>Status do Orçamento</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -373,25 +284,25 @@ const Index = () => {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
                     <YAxis />
-                    <Tooltip formatter={(value) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
+                    <Tooltip formatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
                     <Legend />
-                    <Bar dataKey="Orçamento" fill="#8884d8" />
-                    <Bar dataKey="Consumido" fill="#82ca9d" />
+                    <Bar dataKey="Orçamento Total" fill="#8884d8" />
+                    <Bar dataKey="Custo Real" fill="#82ca9d" />
                     <Bar dataKey="Disponível" fill="#ffc658" />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Variação de Custos */}
+      {/* Indicadores de Performance */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            Variação de Custos
-            {totalActualCost > totalStats.phasesCost.estimated ? (
+            Performance do Projeto
+            {budgetUsed > 100 ? (
               <TrendingUp className="h-4 w-4 text-red-500" />
             ) : (
               <TrendingDown className="h-4 w-4 text-green-500" />
@@ -399,12 +310,26 @@ const Index = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">
-            R$ {Math.abs(totalActualCost - totalStats.phasesCost.estimated).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Status Orçamentário</p>
+              <p className={`text-lg font-semibold ${budgetUsed > 100 ? 'text-red-600' : budgetUsed > 80 ? 'text-yellow-600' : 'text-green-600'}`}>
+                {budgetUsed > 100 ? 'Acima do Orçamento' : budgetUsed > 80 ? 'Atenção' : 'Dentro do Orçamento'}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Valor Disponível</p>
+              <p className="text-lg font-semibold">
+                R$ {remainingBudget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Progresso vs Custo</p>
+              <p className={`text-lg font-semibold ${completionRate > budgetUsed ? 'text-green-600' : 'text-orange-600'}`}>
+                {completionRate > budgetUsed ? 'Eficiente' : 'Revisar'}
+              </p>
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground">
-            {totalActualCost > totalStats.phasesCost.estimated ? 'Acima do orçamento das fases' : 'Dentro do orçamento das fases'}
-          </p>
         </CardContent>
       </Card>
     </div>
