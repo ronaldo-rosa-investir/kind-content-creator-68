@@ -184,7 +184,7 @@ export default function Projects() {
             </TableBody>
           </Table>
         </CardContent>
-      </div>
+      </Card>
     </div>
   );
 }
