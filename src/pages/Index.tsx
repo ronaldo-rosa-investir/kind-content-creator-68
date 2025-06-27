@@ -3,8 +3,10 @@ import { useProject } from "@/contexts/ProjectContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, List, Check, Plus, TrendingUp, AlertTriangle, Users, DollarSign, TrendingDown } from "lucide-react";
+import { Calendar, List, Check, Plus, TrendingUp, AlertTriangle, Users, DollarSign, TrendingDown, PieChart, BarChart3 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { PieChart as RechartsPieChart, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 
 const Index = () => {
   const { phases, wbsItems, tasks, getTotalProjectCost } = useProject();
@@ -21,6 +23,34 @@ const Index = () => {
 
   const { estimated: estimatedCost, actual: actualCost } = getTotalProjectCost();
   const costVariance = estimatedCost > 0 ? ((actualCost - estimatedCost) / estimatedCost) * 100 : 0;
+  const budgetProgress = estimatedCost > 0 ? Math.round((actualCost / estimatedCost) * 100) : 0;
+  const availableBudget = estimatedCost - actualCost;
+
+  // Dados para gráfico de pizza (distribuição por itens EAP)
+  const pieChartData = wbsItems.map(item => ({
+    name: item.activity,
+    value: item.estimatedCost,
+    color: `hsl(${Math.random() * 360}, 70%, 50%)`
+  })).filter(item => item.value > 0);
+
+  // Dados para gráfico de barras (orçamento vs real)
+  const barChartData = [
+    {
+      name: 'Orçado',
+      value: estimatedCost,
+      fill: '#3b82f6'
+    },
+    {
+      name: 'Consumido',
+      value: actualCost,
+      fill: actualCost > estimatedCost ? '#ef4444' : '#10b981'
+    },
+    {
+      name: 'Disponível',
+      value: availableBudget > 0 ? availableBudget : 0,
+      fill: '#f59e0b'
+    }
+  ];
 
   return (
     <div className="space-y-8">
@@ -42,7 +72,7 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Cards de Estatísticas */}
+      {/* Cards de Estatísticas Principais */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
@@ -103,58 +133,162 @@ const Index = () => {
         </Card>
       </div>
 
-      {/* Cards de Custos */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600">Custo Estimado</CardTitle>
-            <div className="p-2 bg-blue-50 rounded-lg">
-              <DollarSign className="h-5 w-5 text-blue-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">
-              R$ {estimatedCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </div>
-            <p className="text-sm text-gray-500">Total planejado</p>
-          </CardContent>
-        </Card>
+      {/* Seção de Custos Reorganizada */}
+      <div className="space-y-6">
+        <h2 className="text-2xl font-semibold text-gray-900">Gestão de Custos</h2>
+        
+        {/* Cards de Custos */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+          <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-medium text-gray-600">Orçamento Total</CardTitle>
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <DollarSign className="h-5 w-5 text-blue-600" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-gray-900">
+                R$ {estimatedCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </div>
+              <p className="text-sm text-gray-500">Total planejado</p>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600">Custo Real</CardTitle>
-            <div className="p-2 bg-green-50 rounded-lg">
-              <DollarSign className="h-5 w-5 text-green-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">
-              R$ {actualCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </div>
-            <p className="text-sm text-gray-500">Total executado</p>
-          </CardContent>
-        </Card>
+          <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-medium text-gray-600">Valor Consumido</CardTitle>
+              <div className="p-2 bg-red-50 rounded-lg">
+                <DollarSign className="h-5 w-5 text-red-600" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-gray-900">
+                R$ {actualCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </div>
+              <p className="text-sm text-gray-500">Total executado</p>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600">Variação de Custo</CardTitle>
-            <div className={`p-2 rounded-lg ${costVariance > 0 ? 'bg-red-50' : 'bg-green-50'}`}>
-              {costVariance > 0 ? (
-                <TrendingDown className="h-5 w-5 text-red-600" />
-              ) : (
-                <TrendingUp className="h-5 w-5 text-green-600" />
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${costVariance > 0 ? 'text-red-600' : 'text-green-600'}`}>
-              {costVariance > 0 ? '+' : ''}{costVariance.toFixed(1)}%
-            </div>
-            <p className="text-sm text-gray-500">
-              {costVariance > 0 ? 'Acima do orçamento' : 'Dentro do orçamento'}
-            </p>
-          </CardContent>
-        </Card>
+          <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-medium text-gray-600">Valor Disponível</CardTitle>
+              <div className="p-2 bg-green-50 rounded-lg">
+                <DollarSign className="h-5 w-5 text-green-600" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                R$ {availableBudget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </div>
+              <p className="text-sm text-gray-500">Saldo restante</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-medium text-gray-600">Variação de Custo</CardTitle>
+              <div className={`p-2 rounded-lg ${costVariance > 0 ? 'bg-red-50' : 'bg-green-50'}`}>
+                {costVariance > 0 ? (
+                  <TrendingDown className="h-5 w-5 text-red-600" />
+                ) : (
+                  <TrendingUp className="h-5 w-5 text-green-600" />
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${costVariance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                {costVariance > 0 ? '+' : ''}{costVariance.toFixed(1)}%
+              </div>
+              <p className="text-sm text-gray-500">
+                {costVariance > 0 ? 'Acima do orçamento' : 'Dentro do orçamento'}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-medium text-gray-600">Progresso do Orçamento</CardTitle>
+              <div className="p-2 bg-orange-50 rounded-lg">
+                <BarChart3 className="h-5 w-5 text-orange-600" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-gray-900 mb-2">{budgetProgress}%</div>
+              <Progress 
+                value={budgetProgress} 
+                className="h-2" 
+                indicatorClassName={budgetProgress > 100 ? "bg-red-500" : "bg-green-500"}
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                {budgetProgress > 100 ? 'Orçamento excedido' : 'Do orçamento consumido'}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Gráficos de Custo */}
+        {pieChartData.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="bg-white border border-gray-200 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <PieChart className="h-5 w-5 text-blue-600" />
+                  Distribuição de Custos por Item EAP
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{
+                    cost: {
+                      label: "Custo",
+                    },
+                  }}
+                  className="h-64"
+                >
+                  <RechartsPieChart>
+                    <ChartTooltip
+                      content={<ChartTooltipContent />}
+                      formatter={(value) => [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Custo']}
+                    />
+                    <RechartsPieChart data={pieChartData} innerRadius={60} outerRadius={100}>
+                      {pieChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </RechartsPieChart>
+                  </RechartsPieChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white border border-gray-200 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-green-600" />
+                  Orçamento vs Consumido vs Disponível
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{
+                    value: {
+                      label: "Valor",
+                    },
+                  }}
+                  className="h-64"
+                >
+                  <BarChart data={barChartData}>
+                    <XAxis dataKey="name" />
+                    <YAxis tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`} />
+                    <Tooltip
+                      formatter={(value) => [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Valor']}
+                    />
+                    <Bar dataKey="value" fill="#8884d8" />
+                  </BarChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
 
       {/* Ações Rápidas */}

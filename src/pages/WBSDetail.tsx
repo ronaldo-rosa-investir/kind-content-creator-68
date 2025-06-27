@@ -1,337 +1,323 @@
-
-import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
-import { useProject } from "@/contexts/ProjectContext";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Plus, Check } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useProject } from '@/contexts/ProjectContext';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Progress } from '@/components/ui/progress';
+import { ArrowLeft, Plus, Check, Clock, User, Trash2, Edit } from 'lucide-react';
+import { toast } from 'sonner';
 
 const WBSDetail = () => {
-  const { id } = useParams<{ id: string }>();
-  const { toast } = useToast();
-  const {
-    wbsItems,
-    phases,
-    updateWBSItem,
-    addSubTask,
-    updateSubTask,
-    addTask,
-    getSubTasksByWBS,
-    getTasksByWBS,
-    getWBSProgress
-  } = useProject();
-
-  const [item, setItem] = useState(wbsItems.find(i => i.id === id));
-  const [subTasks, setSubTasks] = useState(getSubTasksByWBS(id || ""));
-  const [tasks, setTasks] = useState(getTasksByWBS(id || ""));
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { wbsItems, phases, getSubTasksByWBS, addSubTask, updateSubTask, deleteSubTask, addTask, getTasksByWBS, getWBSProgress } = useProject();
+  
   const [isSubTaskDialogOpen, setIsSubTaskDialogOpen] = useState(false);
-  const [newSubTaskDesc, setNewSubTaskDesc] = useState("");
-  const [editData, setEditData] = useState({
-    notes: item?.notes || "",
-    requirements: item?.requirements || "",
-    risks: item?.risks || "",
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [editingSubTask, setEditingSubTask] = useState(null);
+  const [subTaskForm, setSubTaskForm] = useState({
+    description: '',
+    estimatedHours: 0,
+    actualHours: 0
+  });
+  const [taskForm, setTaskForm] = useState({
+    title: '',
+    dueDate: '',
+    responsible: '',
+    description: ''
   });
 
-  useEffect(() => {
-    if (id) {
-      setSubTasks(getSubTasksByWBS(id));
-      setTasks(getTasksByWBS(id));
-    }
-  }, [id, getSubTasksByWBS, getTasksByWBS]);
+  const wbsItem = wbsItems.find(item => item.id === id);
+  const phase = phases.find(p => p.id === wbsItem?.phaseId);
+  const subTasks = getSubTasksByWBS(id);
+  const tasks = getTasksByWBS(id);
+  const progress = getWBSProgress(id);
 
-  const handleSaveNotes = () => {
-    if (item) {
-      updateWBSItem(item.id, editData);
-      setItem({ ...item, ...editData });
-      toast({
-        title: "Salvo com sucesso",
-        description: "As anotações foram atualizadas.",
-      });
-    }
-  };
-
-  const handleAddSubTask = () => {
-    if (newSubTaskDesc && id) {
-      addSubTask({
-        wbsItemId: id,
-        description: newSubTaskDesc,
-        completed: false,
-      });
-      setNewSubTaskDesc("");
-      setIsSubTaskDialogOpen(false);
-      setSubTasks(getSubTasksByWBS(id));
-    }
-  };
-
-  const handleToggleSubTask = (subTaskId: string, completed: boolean) => {
-    updateSubTask(subTaskId, { completed });
-    if (id) {
-      setSubTasks(getSubTasksByWBS(id));
-    }
-  };
-
-  const handleGenerateTask = () => {
-    if (item) {
-      const phase = phases.find(p => p.id === item.phaseId);
-      addTask({
-        title: item.activity,
-        wbsItemId: item.id,
-        phaseId: item.phaseId,
-        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        completed: false,
-        responsible: item.responsible,
-        description: `Tarefa gerada a partir do Item EAP: ${item.code} - ${item.activity}`,
-      });
-      
-      if (id) {
-        setTasks(getTasksByWBS(id));
-      }
-      
-      toast({
-        title: "Tarefa gerada com sucesso",
-        description: "Uma nova tarefa foi criada a partir deste item EAP.",
-      });
-    }
-  };
-
-  if (!item) {
+  if (!wbsItem) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Item EAP não encontrado</p>
+      <div className="p-6">
+        <p>Item EAP não encontrado.</p>
         <Link to="/eap">
-          <Button variant="outline" className="mt-4">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar para EAP
-          </Button>
+          <Button variant="outline">Voltar para EAP</Button>
         </Link>
       </div>
     );
   }
 
-  const phase = phases.find(p => p.id === item.phaseId);
-  const progress = getWBSProgress(item.id);
+  const handleSubTaskSubmit = (e) => {
+    e.preventDefault();
+    if (editingSubTask) {
+      updateSubTask(editingSubTask.id, {
+        description: subTaskForm.description,
+        estimatedHours: subTaskForm.estimatedHours,
+        actualHours: subTaskForm.actualHours
+      });
+      toast.success('Sub-tarefa atualizada!');
+    } else {
+      addSubTask({
+        wbsItemId: id,
+        description: subTaskForm.description,
+        completed: false,
+        estimatedHours: subTaskForm.estimatedHours,
+        actualHours: subTaskForm.actualHours
+      });
+      toast.success('Sub-tarefa criada!');
+    }
+    setIsSubTaskDialogOpen(false);
+    resetSubTaskForm();
+  };
+
+  const handleTaskSubmit = (e) => {
+    e.preventDefault();
+    addTask({
+      title: taskForm.title,
+      wbsItemId: id,
+      phaseId: wbsItem.phaseId,
+      dueDate: taskForm.dueDate,
+      completed: false,
+      responsible: taskForm.responsible,
+      description: taskForm.description,
+      status: 'nao-iniciado',
+      estimatedHours: 8,
+      actualHours: 0,
+      hourlyRate: 100
+    });
+    toast.success('Tarefa criada!');
+    setIsTaskDialogOpen(false);
+    resetTaskForm();
+  };
+
+  const resetSubTaskForm = () => {
+    setSubTaskForm({
+      description: '',
+      estimatedHours: 0,
+      actualHours: 0
+    });
+    setEditingSubTask(null);
+  };
+
+  const resetTaskForm = () => {
+    setTaskForm({
+      title: '',
+      dueDate: '',
+      responsible: '',
+      description: ''
+    });
+  };
+
+  const handleEditSubTask = (subTask) => {
+    setEditingSubTask(subTask);
+    setSubTaskForm({
+      description: subTask.description,
+      estimatedHours: subTask.estimatedHours,
+      actualHours: subTask.actualHours
+    });
+    setIsSubTaskDialogOpen(true);
+  };
+
+  const handleDeleteSubTask = (id) => {
+    if (confirm('Tem certeza que deseja deletar esta sub-tarefa?')) {
+      deleteSubTask(id);
+      toast.success('Sub-tarefa deletada!');
+    }
+  };
+
+  const toggleSubTaskCompletion = (subTask) => {
+    updateSubTask(subTask.id, { completed: !subTask.completed });
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link to="/eap">
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <span className="text-sm font-mono bg-muted px-2 py-1 rounded">
-              {item.code}
-            </span>
-            {item.activity}
-          </h1>
-          <p className="text-muted-foreground">
-            Fase: {phase?.name} | Responsável: {item.responsible}
-          </p>
-        </div>
+    <div className="p-6 space-y-6">
+      <div className="flex items-center space-x-2">
+        <Button variant="ghost" onClick={() => navigate(-1)}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Voltar
+        </Button>
+        <h2 className="text-2xl font-semibold">Detalhes do Item EAP</h2>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          {/* Propriedades do Item EAP */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Propriedades do Item EAP</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Código EAP</Label>
-                  <p className="font-mono">{item.code}</p>
-                </div>
-                <div>
-                  <Label>Dias Após Início</Label>
-                  <p>{item.daysAfterStart}</p>
-                </div>
-              </div>
-              <div>
-                <Label>Atividade</Label>
-                <p>{item.activity}</p>
-              </div>
-              <div>
-                <Label>Progresso</Label>
-                <div className="flex items-center gap-4">
-                  <Progress value={progress} className="flex-1" />
-                  <span className="font-semibold">{progress}%</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Informações do Item EAP</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <div>
+            <Label>Código</Label>
+            <Input type="text" value={wbsItem.code} readOnly />
+          </div>
+          <div>
+            <Label>Atividade</Label>
+            <Input type="text" value={wbsItem.activity} readOnly />
+          </div>
+          <div>
+            <Label>Fase</Label>
+            <Input type="text" value={phase?.name} readOnly />
+          </div>
+          <div>
+            <Label>Responsável</Label>
+            <Input type="text" value={wbsItem.responsible} readOnly />
+          </div>
+          <div>
+            <Label>Progresso</Label>
+            <Progress value={progress} />
+            <p className="text-sm text-muted-foreground">{progress}% Completo</p>
+          </div>
+        </CardContent>
+      </Card>
 
-          {/* Anotações */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Anotações</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="notes">Notas Gerais</Label>
-                <Textarea
-                  id="notes"
-                  value={editData.notes}
-                  onChange={(e) => setEditData({ ...editData, notes: e.target.value })}
-                  placeholder="Adicione suas anotações aqui..."
-                />
-              </div>
-              <div>
-                <Label htmlFor="requirements">Requisitos</Label>
-                <Textarea
-                  id="requirements"
-                  value={editData.requirements}
-                  onChange={(e) => setEditData({ ...editData, requirements: e.target.value })}
-                  placeholder="Descreva os requisitos..."
-                />
-              </div>
-              <div>
-                <Label htmlFor="risks">Riscos</Label>
-                <Textarea
-                  id="risks"
-                  value={editData.risks}
-                  onChange={(e) => setEditData({ ...editData, risks: e.target.value })}
-                  placeholder="Identifique os riscos..."
-                />
-              </div>
-              <Button onClick={handleSaveNotes}>Salvar Anotações</Button>
-            </CardContent>
-          </Card>
-
-          {/* Sub-Tarefas */}
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle>Sub-Tarefas (Checklist)</CardTitle>
-                <Dialog open={isSubTaskDialogOpen} onOpenChange={setIsSubTaskDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="sm">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Adicionar
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Nova Sub-Tarefa</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="subTaskDesc">Descrição</Label>
-                        <Input
-                          id="subTaskDesc"
-                          value={newSubTaskDesc}
-                          onChange={(e) => setNewSubTaskDesc(e.target.value)}
-                          placeholder="Descreva a sub-tarefa..."
-                        />
-                      </div>
-                      <Button onClick={handleAddSubTask} className="w-full">
-                        Adicionar Sub-Tarefa
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {subTasks.map((subTask) => (
-                  <div key={subTask.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      checked={subTask.completed}
-                      onCheckedChange={(checked) => 
-                        handleToggleSubTask(subTask.id, checked as boolean)
-                      }
+      <Card>
+        <CardHeader className="flex justify-between">
+          <CardTitle>Sub-tarefas</CardTitle>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button><Plus className="mr-2 h-4 w-4" /> Adicionar Sub-tarefa</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingSubTask ? 'Editar Sub-tarefa' : 'Adicionar Sub-tarefa'}</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubTaskSubmit} className="grid gap-4">
+                <div>
+                  <Label htmlFor="description">Descrição</Label>
+                  <Textarea
+                    id="description"
+                    value={subTaskForm.description}
+                    onChange={(e) => setSubTaskForm({ ...subTaskForm, description: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="estimatedHours">Horas Estimadas</Label>
+                  <Input
+                    type="number"
+                    id="estimatedHours"
+                    value={subTaskForm.estimatedHours}
+                    onChange={(e) => setSubTaskForm({ ...subTaskForm, estimatedHours: parseFloat(e.target.value) })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="actualHours">Horas Reais</Label>
+                  <Input
+                    type="number"
+                    id="actualHours"
+                    value={subTaskForm.actualHours}
+                    onChange={(e) => setSubTaskForm({ ...subTaskForm, actualHours: parseFloat(e.target.value) })}
+                    required
+                  />
+                </div>
+                <Button type="submit">{editingSubTask ? 'Atualizar' : 'Salvar'}</Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CardContent>
+          {subTasks.length > 0 ? (
+            <ul className="divide-y divide-gray-200">
+              {subTasks.map(subTask => (
+                <li key={subTask.id} className="py-2 flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <Check
+                      className={`h-5 w-5 cursor-pointer ${subTask.completed ? 'text-green-500' : 'text-gray-400'}`}
+                      onClick={() => toggleSubTaskCompletion(subTask)}
                     />
-                    <span className={subTask.completed ? "line-through text-muted-foreground" : ""}>
-                      {subTask.description}
-                    </span>
+                    <span>{subTask.description}</span>
                   </div>
-                ))}
-                {subTasks.length === 0 && (
-                  <p className="text-muted-foreground text-sm">
-                    Nenhuma sub-tarefa criada ainda
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="space-y-6">
-          {/* Ações */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Ações</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={handleGenerateTask} className="w-full">
-                <Check className="h-4 w-4 mr-2" />
-                Gerar Tarefa
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Tarefas Geradas */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Tarefas Geradas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {tasks.map((task) => (
-                  <div key={task.id} className="p-2 border rounded">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium">{task.title}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Vencimento: {new Date(task.dueDate).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <span className={`text-xs px-2 py-1 rounded ${
-                        task.completed 
-                          ? "bg-green-100 text-green-800" 
-                          : "bg-yellow-100 text-yellow-800"
-                      }`}>
-                        {task.completed ? "Concluída" : "Pendente"}
-                      </span>
-                    </div>
+                  <div className="flex space-x-2">
+                    <Button variant="ghost" size="sm" onClick={() => handleEditSubTask(subTask)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDeleteSubTask(subTask.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
-                ))}
-                {tasks.length === 0 && (
-                  <p className="text-muted-foreground text-sm">
-                    Nenhuma tarefa gerada ainda
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>Nenhuma sub-tarefa adicionada.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex justify-between">
+          <CardTitle>Tarefas</CardTitle>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button><Plus className="mr-2 h-4 w-4" /> Adicionar Tarefa</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Adicionar Tarefa</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleTaskSubmit} className="grid gap-4">
+                <div>
+                  <Label htmlFor="title">Título</Label>
+                  <Input
+                    type="text"
+                    id="title"
+                    value={taskForm.title}
+                    onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="dueDate">Data de Entrega</Label>
+                  <Input
+                    type="date"
+                    id="dueDate"
+                    value={taskForm.dueDate}
+                    onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="responsible">Responsável</Label>
+                  <Input
+                    type="text"
+                    id="responsible"
+                    value={taskForm.responsible}
+                    onChange={(e) => setTaskForm({ ...taskForm, responsible: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="description">Descrição</Label>
+                  <Textarea
+                    id="description"
+                    value={taskForm.description}
+                    onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
+                  />
+                </div>
+                <Button type="submit">Salvar</Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CardContent>
+          {tasks.length > 0 ? (
+            <ul className="divide-y divide-gray-200">
+              {tasks.map(task => (
+                <li key={task.id} className="py-2 flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <span>{task.title}</span>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Entrega: {new Date(task.dueDate).toLocaleDateString()}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>Nenhuma tarefa adicionada.</p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
