@@ -167,7 +167,7 @@ export default function Projects() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Button variant="ghost" size="sm" asChild>
-                        <Link to={`/projetos/${project.id}/dashboard`}>
+                        <Link to="/">
                           <Eye className="h-4 w-4" />
                         </Link>
                       </Button>
@@ -184,7 +184,7 @@ export default function Projects() {
             </TableBody>
           </Table>
         </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }
