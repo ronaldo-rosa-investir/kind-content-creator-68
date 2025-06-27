@@ -3,21 +3,24 @@ import { useProject } from "@/contexts/ProjectContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, List, Check, Plus, TrendingUp, AlertTriangle, Users } from "lucide-react";
+import { Calendar, List, Check, Plus, TrendingUp, AlertTriangle, Users, DollarSign, TrendingDown } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Index = () => {
-  const { phases, wbsItems, tasks } = useProject();
+  const { phases, wbsItems, tasks, getTotalProjectCost } = useProject();
 
   const completedTasks = tasks.filter(task => task.completed).length;
   const taskProgress = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
 
   const activePhases = phases.filter(phase => phase.status === 'em-andamento').length;
-  const completedPhases = phases.filter(phase => phase.status === 'concluida').length;
+  const completedPhases = phases.filter(phase => phase.status === 'concluido').length;
 
   const overdueTasks = tasks.filter(task => 
     !task.completed && new Date(task.dueDate) < new Date()
   ).length;
+
+  const { estimated: estimatedCost, actual: actualCost } = getTotalProjectCost();
+  const costVariance = estimatedCost > 0 ? ((actualCost - estimatedCost) / estimatedCost) * 100 : 0;
 
   return (
     <div className="space-y-8">
@@ -96,6 +99,60 @@ const Index = () => {
           <CardContent>
             <div className="text-3xl font-bold text-gray-900 mb-2">{taskProgress}%</div>
             <Progress value={taskProgress} className="h-2" />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Cards de Custos */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-medium text-gray-600">Custo Estimado</CardTitle>
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <DollarSign className="h-5 w-5 text-blue-600" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-900">
+              R$ {estimatedCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </div>
+            <p className="text-sm text-gray-500">Total planejado</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-medium text-gray-600">Custo Real</CardTitle>
+            <div className="p-2 bg-green-50 rounded-lg">
+              <DollarSign className="h-5 w-5 text-green-600" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-900">
+              R$ {actualCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </div>
+            <p className="text-sm text-gray-500">Total executado</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-medium text-gray-600">Variação de Custo</CardTitle>
+            <div className={`p-2 rounded-lg ${costVariance > 0 ? 'bg-red-50' : 'bg-green-50'}`}>
+              {costVariance > 0 ? (
+                <TrendingDown className="h-5 w-5 text-red-600" />
+              ) : (
+                <TrendingUp className="h-5 w-5 text-green-600" />
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${costVariance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+              {costVariance > 0 ? '+' : ''}{costVariance.toFixed(1)}%
+            </div>
+            <p className="text-sm text-gray-500">
+              {costVariance > 0 ? 'Acima do orçamento' : 'Dentro do orçamento'}
+            </p>
           </CardContent>
         </Card>
       </div>

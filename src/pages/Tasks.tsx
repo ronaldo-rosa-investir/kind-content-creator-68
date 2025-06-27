@@ -5,11 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Calendar, User } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Plus } from "lucide-react";
+import TaskWithSubtasks from "@/components/TaskWithSubtasks";
 import {
   Dialog,
   DialogContent,
@@ -26,7 +23,7 @@ import {
 } from "@/components/ui/select";
 
 const Tasks = () => {
-  const { tasks, wbsItems, phases, addTask, updateTask } = useProject();
+  const { tasks, wbsItems, phases, addTask } = useProject();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
@@ -35,6 +32,9 @@ const Tasks = () => {
     dueDate: "",
     responsible: "",
     description: "",
+    estimatedHours: 0,
+    actualHours: 0,
+    hourlyRate: 0,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -42,6 +42,7 @@ const Tasks = () => {
     addTask({
       ...formData,
       completed: false,
+      status: 'nao-iniciado' as const,
     });
     setFormData({
       title: "",
@@ -50,12 +51,11 @@ const Tasks = () => {
       dueDate: "",
       responsible: "",
       description: "",
+      estimatedHours: 0,
+      actualHours: 0,
+      hourlyRate: 0,
     });
     setIsDialogOpen(false);
-  };
-
-  const handleToggleTask = (taskId: string, completed: boolean) => {
-    updateTask(taskId, { completed });
   };
 
   const getWBSItemById = (wbsItemId: string) => {
@@ -157,6 +157,30 @@ const Tasks = () => {
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="estimatedHours">Horas Estimadas</Label>
+                  <Input
+                    id="estimatedHours"
+                    type="number"
+                    value={formData.estimatedHours}
+                    onChange={(e) => setFormData({ ...formData, estimatedHours: Number(e.target.value) })}
+                    min="0"
+                    step="0.5"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="hourlyRate">Valor/Hora (R$)</Label>
+                  <Input
+                    id="hourlyRate"
+                    type="number"
+                    value={formData.hourlyRate}
+                    onChange={(e) => setFormData({ ...formData, hourlyRate: Number(e.target.value) })}
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+              </div>
               <Button type="submit" className="w-full">
                 Criar Tarefa
               </Button>
@@ -169,78 +193,14 @@ const Tasks = () => {
         {tasks.map((task) => {
           const wbsItem = getWBSItemById(task.wbsItemId);
           const phase = getPhaseById(task.phaseId);
-          const isOverdue = new Date(task.dueDate) < new Date() && !task.completed;
 
           return (
-            <Card key={task.id} className={isOverdue ? "border-red-200" : ""}>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      checked={task.completed}
-                      onCheckedChange={(checked) => 
-                        handleToggleTask(task.id, checked as boolean)
-                      }
-                      className="mt-1"
-                    />
-                    <div>
-                      <CardTitle className={task.completed ? "line-through text-muted-foreground" : ""}>
-                        {task.title}
-                      </CardTitle>
-                      <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <User className="h-4 w-4" />
-                          {task.responsible}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          {new Date(task.dueDate).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-2">
-                    {task.completed ? (
-                      <Badge variant="outline" className="bg-green-50 text-green-700">
-                        Concluída
-                      </Badge>
-                    ) : isOverdue ? (
-                      <Badge variant="destructive">
-                        Atrasada
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary">
-                        Pendente
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {wbsItem && (
-                    <div className="text-sm">
-                      <span className="text-muted-foreground">Origem EAP: </span>
-                      <Link 
-                        to={`/eap/${wbsItem.id}`}
-                        className="font-mono text-primary hover:underline"
-                      >
-                        {wbsItem.code} - {wbsItem.activity}
-                      </Link>
-                    </div>
-                  )}
-                  {phase && (
-                    <div className="text-sm">
-                      <span className="text-muted-foreground">Fase: </span>
-                      <span>{phase.name}</span>
-                    </div>
-                  )}
-                  {task.description && (
-                    <p className="text-sm mt-2">{task.description}</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <TaskWithSubtasks
+              key={task.id}
+              task={task}
+              wbsItem={wbsItem}
+              phase={phase}
+            />
           );
         })}
       </div>

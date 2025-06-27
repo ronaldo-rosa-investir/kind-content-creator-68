@@ -14,6 +14,8 @@ import Tasks from "./pages/Tasks";
 import CostManagement from "./pages/CostManagement";
 import LessonsLearned from "./pages/LessonsLearned";
 import ClosureChecklist from "./pages/ClosureChecklist";
+import Team from "./pages/Team";
+import WBSDictionaryPage from "./pages/WBSDictionary";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +37,8 @@ const App = () => (
               <Route path="/custos" element={<CostManagement />} />
               <Route path="/licoes" element={<LessonsLearned />} />
               <Route path="/fechamento" element={<ClosureChecklist />} />
+              <Route path="/equipe" element={<Team />} />
+              <Route path="/dicionario" element={<WBSDictionaryPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
