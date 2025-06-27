@@ -16,6 +16,9 @@ import LessonsLearned from "./pages/LessonsLearned";
 import ClosureChecklist from "./pages/ClosureChecklist";
 import Team from "./pages/Team";
 import WBSDictionaryPage from "./pages/WBSDictionary";
+import Requirements from "./pages/Requirements";
+import ScopeStatement from "./pages/ScopeStatement";
+import ScopeValidation from "./pages/ScopeValidation";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +42,9 @@ const App = () => (
               <Route path="/fechamento" element={<ClosureChecklist />} />
               <Route path="/equipe" element={<Team />} />
               <Route path="/dicionario" element={<WBSDictionaryPage />} />
+              <Route path="/requisitos" element={<Requirements />} />
+              <Route path="/escopo" element={<ScopeStatement />} />
+              <Route path="/validacao" element={<ScopeValidation />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
