@@ -11,6 +11,13 @@ import { Link } from 'react-router-dom';
 const Index = () => {
   const { phases, wbsItems, tasks, costItems, requirements, scopeStatement, scopeValidations, getTotalProjectCost } = useProject();
 
+  // Calcular custos das fases
+  const getTotalPhasesCost = () => {
+    const estimated = phases.reduce((total, phase) => total + phase.estimatedCost, 0);
+    const actual = phases.reduce((total, phase) => total + phase.actualCost, 0);
+    return { estimated, actual };
+  };
+
   const totalStats = {
     phases: phases.length,
     wbsItems: wbsItems.length,
@@ -20,7 +27,8 @@ const Index = () => {
     approvedRequirements: requirements.filter(req => req.status === 'aprovado').length,
     scopeValidations: scopeValidations.length,
     approvedValidations: scopeValidations.filter(val => val.status === 'aprovado').length,
-    totalCost: getTotalProjectCost()
+    totalCost: getTotalProjectCost(),
+    phasesCost: getTotalPhasesCost()
   };
 
   const completionRate = totalStats.tasks > 0 ? (totalStats.completedTasks / totalStats.tasks) * 100 : 0;
@@ -37,17 +45,18 @@ const Index = () => {
     actual: item.actualCost
   })).filter(item => item.value > 0);
 
-  // Define um orçamento total de exemplo
-  const totalBudget = 150000;
-  const availableBudget = totalBudget - totalStats.totalCost.actual;
-  const budgetProgress = (totalStats.totalCost.actual / totalBudget) * 100;
+  // Define um orçamento total de exemplo (usar custo estimado das fases se maior)
+  const totalBudget = Math.max(150000, totalStats.phasesCost.estimated);
+  const totalActualCost = totalStats.totalCost.actual + totalStats.phasesCost.actual;
+  const availableBudget = totalBudget - totalActualCost;
+  const budgetProgress = (totalActualCost / totalBudget) * 100;
 
   // Prepara os dados para o gráfico de barras de orçamento
   const budgetData = [
     {
       name: 'Orçamento',
       Orçamento: totalBudget,
-      Consumido: totalStats.totalCost.actual,
+      Consumido: totalActualCost,
       Disponível: availableBudget
     }
   ];
@@ -56,6 +65,12 @@ const Index = () => {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Dashboard do Projeto</h1>
+        <Link to="/tap">
+          <Button variant="outline">
+            <FileText className="h-4 w-4 mr-2" />
+            Ver TAP
+          </Button>
+        </Link>
       </div>
 
       {/* Estatísticas Principais */}
@@ -175,25 +190,25 @@ const Index = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Custo Estimado</CardTitle>
+              <CardTitle className="text-sm font-medium">Custo Estimado (Fases)</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                R$ {totalStats.totalCost.estimated.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                R$ {totalStats.phasesCost.estimated.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
-              <p className="text-xs text-muted-foreground">Planejado</p>
+              <p className="text-xs text-muted-foreground">Planejado nas fases</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Custo Real</CardTitle>
+              <CardTitle className="text-sm font-medium">Custo Real (Total)</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                R$ {totalStats.totalCost.actual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                R$ {totalActualCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
               <p className="text-xs text-muted-foreground">Executado</p>
             </CardContent>
@@ -242,7 +257,7 @@ const Index = () => {
               </div>
               <Progress value={budgetProgress} className="h-3" />
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>R$ {totalStats.totalCost.actual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                <span>R$ {totalActualCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                 <span>R$ {totalBudget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
               </div>
             </div>
@@ -307,7 +322,7 @@ const Index = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             Variação de Custos
-            {totalStats.totalCost.actual > totalStats.totalCost.estimated ? (
+            {totalActualCost > totalStats.phasesCost.estimated ? (
               <TrendingUp className="h-4 w-4 text-red-500" />
             ) : (
               <TrendingDown className="h-4 w-4 text-green-500" />
@@ -316,10 +331,10 @@ const Index = () => {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            R$ {Math.abs(totalStats.totalCost.actual - totalStats.totalCost.estimated).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            R$ {Math.abs(totalActualCost - totalStats.phasesCost.estimated).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
           <p className="text-sm text-muted-foreground">
-            {totalStats.totalCost.actual > totalStats.totalCost.estimated ? 'Acima do orçamento' : 'Dentro do orçamento'}
+            {totalActualCost > totalStats.phasesCost.estimated ? 'Acima do orçamento das fases' : 'Dentro do orçamento das fases'}
           </p>
         </CardContent>
       </Card>

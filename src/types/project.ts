@@ -1,8 +1,7 @@
-
 export interface ProjectPhase {
   id: string;
   name: string;
-  status: 'nao-iniciado' | 'em-andamento' | 'pausado' | 'em-revisao' | 'concluido' | 'cancelado' | 'cancelado-com-ressalvas';
+  status: 'nao-iniciado' | 'em-andamento' | 'pausado' | 'em-revisao' | 'concluido' | 'concluido-com-ressalvas' | 'cancelado' | 'cancelado-com-ressalvas';
   responsible: string;
   startDate: string;
   endDate: string;
@@ -190,23 +189,37 @@ export interface ScopeValidation {
 export interface ProjectCharter {
   id: string;
   projectName: string;
+  sponsors: string;
   projectManager: string;
-  sponsor: string;
-  businessJustification: string;
-  projectObjectives: string[];
-  highLevelRequirements: string[];
-  assumptions: string[];
-  constraints: string[];
-  risks: string[];
-  budget: number;
-  timeline: string;
-  stakeholders: string[];
-  successCriteria: string[];
-  approvedBy: string;
-  approvalDate: string;
-  version: string;
+  startDate: string;
+  estimatedEndDate: string;
+  estimatedBudget: number;
+  projectObjectives: string;
+  businessDemand: string;
+  projectScope: string;
+  projectNotScope: string;
+  stakeholders: string;
+  existingProjectsInterface: string;
+  constraints: string;
+  assumptions: string;
+  basicTeam: TeamMemberBasic[];
+  sponsorSignatures: SponsorSignature[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface TeamMemberBasic {
+  id: string;
+  name: string;
+  role: string;
+  contractType: 'projeto-fechado' | 'horas-dias' | 'gratuito';
+  hourlyRate?: number;
+}
+
+export interface SponsorSignature {
+  id: string;
+  sponsorName: string;
+  signatureDate: string;
 }
 
 export interface ProjectLifecycle {
