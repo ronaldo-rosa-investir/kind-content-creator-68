@@ -167,7 +167,7 @@ export default function Projects() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Button variant="ghost" size="sm" asChild>
-                        <Link to={`/projetos/${project.id}`}>
+                        <Link to={`/projetos/${project.id}/dashboard`}>
                           <Eye className="h-4 w-4" />
                         </Link>
                       </Button>

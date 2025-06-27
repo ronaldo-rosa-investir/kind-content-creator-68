@@ -15,7 +15,18 @@ import Clients from "./pages/Clients";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 
-// Páginas do Projeto
+// Páginas do Projeto (contextuais)
+import ProjectDashboard from "./pages/ProjectDashboard";
+import ProjectTAP from "./pages/ProjectTAP";
+import ProjectPhases from "./pages/ProjectPhases";
+import ProjectWBS from "./pages/ProjectWBS";
+import ProjectTasks from "./pages/ProjectTasks";
+import ProjectCosts from "./pages/ProjectCosts";
+import ProjectRisks from "./pages/ProjectRisks";
+import ProjectDocuments from "./pages/ProjectDocuments";
+import ProjectCommunications from "./pages/ProjectCommunications";
+
+// Páginas do Projeto (originais - mantidas para compatibilidade)
 import Index from "./pages/Index";
 import Phases from "./pages/Phases";
 import WBS from "./pages/WBS";
@@ -53,7 +64,18 @@ const App = () => (
               <Route path="/relatorios" element={<Reports />} />
               <Route path="/config" element={<Settings />} />
               
-              {/* Projeto Específico */}
+              {/* Navegação Contextual do Projeto */}
+              <Route path="/projetos/:projectId/dashboard" element={<ProjectDashboard />} />
+              <Route path="/projetos/:projectId/tap" element={<ProjectTAP />} />
+              <Route path="/projetos/:projectId/fases" element={<ProjectPhases />} />
+              <Route path="/projetos/:projectId/eap" element={<ProjectWBS />} />
+              <Route path="/projetos/:projectId/tarefas" element={<ProjectTasks />} />
+              <Route path="/projetos/:projectId/custos" element={<ProjectCosts />} />
+              <Route path="/projetos/:projectId/riscos" element={<ProjectRisks />} />
+              <Route path="/projetos/:projectId/documentos" element={<ProjectDocuments />} />
+              <Route path="/projetos/:projectId/comunicacoes" element={<ProjectCommunications />} />
+              
+              {/* Projeto Específico (rotas originais mantidas) */}
               <Route path="/" element={<Index />} />
               <Route path="/tap" element={<ProjectCharter />} />
               <Route path="/ciclo-vida" element={<ProjectLifecycle />} />

@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings, User, Users, Database, FileTemplate } from "lucide-react";
+import { Settings, User, Users, Database, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function Settings() {
@@ -27,7 +27,7 @@ export default function Settings() {
     {
       title: "Modelos e Templates",
       description: "Gerencie modelos de TAP, EAP e outros documentos",
-      icon: FileTemplate,
+      icon: FileText,
       url: "/config/modelos"
     }
   ];
