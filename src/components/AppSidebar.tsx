@@ -1,6 +1,6 @@
 
-import { NavLink, useLocation } from "react-router-dom";
-import { Calendar, List, Check, Home, DollarSign, BookOpen, ClipboardCheck, Users, FileText, FolderOpen, UserCircle, BarChart3, Settings } from "lucide-react";
+import { NavLink, useLocation, useParams } from "react-router-dom";
+import { Calendar, List, Check, Home, DollarSign, BookOpen, ClipboardCheck, Users, FileText, FolderOpen, UserCircle, BarChart3, Settings, MessageCircle, AlertTriangle } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -11,6 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { Badge } from "@/components/ui/badge";
 
 const globalItems = [
   { title: "Dashboard", url: "/dashboard", icon: Home },
@@ -21,12 +22,19 @@ const globalItems = [
 ];
 
 const projectItems = [
-  { title: "Dashboard Projeto", url: "/", icon: Home },
+  { title: "Dashboard do Projeto", url: "/dashboard", icon: Home },
   { title: "TAP", url: "/tap", icon: FileText },
   { title: "Fases do Projeto", url: "/fases", icon: Calendar },
-  { title: "Itens EAP", url: "/eap", icon: List },
+  { title: "EAP", url: "/eap", icon: List },
   { title: "Tarefas", url: "/tarefas", icon: Check },
-  { title: "Gestão de Custos", url: "/custos", icon: DollarSign },
+  { title: "Custos", url: "/custos", icon: DollarSign },
+  { title: "Riscos", url: "/riscos", icon: AlertTriangle },
+  { title: "Documentos", url: "/documentos", icon: FileText },
+  { title: "Comunicações", url: "/comunicacoes", icon: MessageCircle },
+];
+
+// Legacy project items (mantidos para compatibilidade)
+const legacyProjectItems = [
   { title: "Lições Aprendidas", url: "/licoes", icon: BookOpen },
   { title: "Checklist Fechamento", url: "/fechamento", icon: ClipboardCheck },
   { title: "Equipe", url: "/equipe", icon: Users },
@@ -35,12 +43,16 @@ const projectItems = [
 
 export function AppSidebar() {
   const location = useLocation();
+  const params = useParams();
   const currentPath = location.pathname;
+  const projectId = params.projectId;
 
   const isActive = (path: string) => {
     if (path === "/") return currentPath === "/";
     return currentPath === path || currentPath.startsWith(path);
   };
+
+  const isProjectContext = currentPath.includes('/projetos/') && projectId;
 
   return (
     <Sidebar className="w-64 bg-white border-r border-gray-200" collapsible="offcanvas">
@@ -86,13 +98,48 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
+        {isProjectContext && (
+          <SidebarGroup className="px-4 py-4">
+            <SidebarGroupLabel className="text-gray-700 font-medium mb-2 flex items-center justify-between">
+              <span>Projeto Atual</span>
+              <Badge variant="outline" className="text-xs">ID: {projectId}</Badge>
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1">
+                {projectItems.map((item) => {
+                  const fullUrl = `/projetos/${projectId}${item.url}`;
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton asChild>
+                        <NavLink
+                          to={fullUrl}
+                          className={({ isActive: navIsActive }) =>
+                            `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                              navIsActive || isActive(fullUrl)
+                                ? "bg-green-50 text-green-700 border-l-4 border-green-600 font-medium"
+                                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                            }`
+                          }
+                        >
+                          <item.icon className="h-5 w-5" />
+                          <span className="font-medium">{item.title}</span>
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
         <SidebarGroup className="px-4 py-4">
           <SidebarGroupLabel className="text-gray-700 font-medium mb-2">
-            Projeto Atual
+            {isProjectContext ? "Ferramentas Extras" : "Projeto Demo"}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
-              {projectItems.map((item) => (
+              {(isProjectContext ? legacyProjectItems : [...projectItems, ...legacyProjectItems]).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink
