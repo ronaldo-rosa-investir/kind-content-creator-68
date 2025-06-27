@@ -9,7 +9,7 @@ import { DollarSign, TrendingUp, TrendingDown, Clock, Users, CheckCircle, AlertC
 import { Link } from 'react-router-dom';
 
 const Index = () => {
-  const { phases, wbsItems, tasks, costItems, requirements, scopeStatement, scopeValidations, getTotalProjectCost } = useProject();
+  const { phases, wbsItems, tasks, costItems, requirements, scopeStatement, scopeValidations, getTotalProjectCost, projectCharter } = useProject();
 
   // Calcular custos das fases
   const getTotalPhasesCost = () => {
@@ -17,6 +17,27 @@ const Index = () => {
     const actual = phases.reduce((total, phase) => total + phase.actualCost, 0);
     return { estimated, actual };
   };
+
+  // Verificar TAP
+  const currentTAP = projectCharter.length > 0 ? projectCharter[0] : null;
+  const isTAPComplete = currentTAP ? !!(
+    currentTAP.projectName && 
+    currentTAP.sponsors && 
+    currentTAP.projectManager && 
+    currentTAP.startDate && 
+    currentTAP.estimatedEndDate &&
+    currentTAP.projectObjectives &&
+    currentTAP.businessDemand &&
+    currentTAP.projectScope &&
+    currentTAP.projectNotScope &&
+    currentTAP.stakeholders &&
+    currentTAP.existingProjectsInterface &&
+    currentTAP.constraints &&
+    currentTAP.assumptions &&
+    currentTAP.estimatedBudget &&
+    currentTAP.basicTeam?.length > 0 &&
+    currentTAP.sponsorSignatures?.length > 0
+  ) : false;
 
   const totalStats = {
     phases: phases.length,
@@ -45,8 +66,8 @@ const Index = () => {
     actual: item.actualCost
   })).filter(item => item.value > 0);
 
-  // Define um orçamento total de exemplo (usar custo estimado das fases se maior)
-  const totalBudget = Math.max(150000, totalStats.phasesCost.estimated);
+  // Usar orçamento do TAP se disponível, senão usar o máximo entre custo das fases e um valor padrão
+  const totalBudget = currentTAP?.estimatedBudget || Math.max(150000, totalStats.phasesCost.estimated);
   const totalActualCost = totalStats.totalCost.actual + totalStats.phasesCost.actual;
   const availableBudget = totalBudget - totalActualCost;
   const budgetProgress = (totalActualCost / totalBudget) * 100;
@@ -68,10 +89,56 @@ const Index = () => {
         <Link to="/tap">
           <Button variant="outline">
             <FileText className="h-4 w-4 mr-2" />
-            Ver TAP
+            {currentTAP ? 'Ver TAP' : 'Criar TAP'}
           </Button>
         </Link>
       </div>
+
+      {/* Seção do TAP */}
+      <Card className={`border-2 ${isTAPComplete ? 'border-green-200 bg-green-50' : 'border-orange-200 bg-orange-50'}`}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Termo de Abertura do Projeto (TAP)
+            {isTAPComplete ? (
+              <CheckCircle className="h-5 w-5 text-green-600" />
+            ) : (
+              <AlertCircle className="h-5 w-5 text-orange-600" />
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Status</p>
+              <p className={`font-semibold ${isTAPComplete ? 'text-green-700' : 'text-orange-700'}`}>
+                {isTAPComplete ? 'TAP Completo' : 'TAP Incompleto'}
+              </p>
+            </div>
+            {currentTAP && (
+              <>
+                <div>
+                  <p className="text-sm text-muted-foreground">Projeto</p>
+                  <p className="font-semibold">{currentTAP.projectName || 'Não definido'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Orçamento TAP</p>
+                  <p className="font-semibold text-blue-700">
+                    R$ {currentTAP.estimatedBudget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+          <div className="mt-4">
+            <Link to="/tap">
+              <Button size="sm" variant={isTAPComplete ? "outline" : "default"}>
+                {currentTAP ? (isTAPComplete ? 'Ver TAP' : 'Completar TAP') : 'Criar TAP'}
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Estatísticas Principais */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -223,7 +290,9 @@ const Index = () => {
               <div className="text-2xl font-bold">
                 R$ {totalBudget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
-              <p className="text-xs text-muted-foreground">Aprovado</p>
+              <p className="text-xs text-muted-foreground">
+                {currentTAP ? 'Do TAP' : 'Estimado'}
+              </p>
             </CardContent>
           </Card>
 

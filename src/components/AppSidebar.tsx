@@ -14,6 +14,7 @@ import {
 
 const items = [
   { title: "Dashboard", url: "/", icon: Home },
+  { title: "TAP", url: "/tap", icon: FileText },
   { title: "Fases do Projeto", url: "/fases", icon: Calendar },
   { title: "Itens EAP", url: "/eap", icon: List },
   { title: "Tarefas", url: "/tarefas", icon: Check },
