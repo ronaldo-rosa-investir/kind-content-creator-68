@@ -25,7 +25,7 @@ export function AppSidebar() {
   const isActive = (path: string) => currentPath === path || currentPath.startsWith(path);
 
   return (
-    <Sidebar className="w-64" collapsible>
+    <Sidebar className="w-64" collapsible="offcanvas">
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Gerenciamento de Projetos</SidebarGroupLabel>
