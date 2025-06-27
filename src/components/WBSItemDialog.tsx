@@ -46,6 +46,9 @@ const WBSItemDialog = ({ trigger, wbsItem, onSave }: WBSItemDialogProps) => {
     hourlyRate: 0,
     estimatedCost: 0,
     actualCost: 0,
+    contractType: 'horas' as const,
+    contractValue: 0,
+    contractDuration: 0,
   });
 
   useEffect(() => {
@@ -64,6 +67,9 @@ const WBSItemDialog = ({ trigger, wbsItem, onSave }: WBSItemDialogProps) => {
         hourlyRate: wbsItem.hourlyRate,
         estimatedCost: wbsItem.estimatedCost,
         actualCost: wbsItem.actualCost,
+        contractType: wbsItem.contractType,
+        contractValue: wbsItem.contractValue || 0,
+        contractDuration: wbsItem.contractDuration || 0,
       });
     } else {
       setFormData({
@@ -80,6 +86,9 @@ const WBSItemDialog = ({ trigger, wbsItem, onSave }: WBSItemDialogProps) => {
         hourlyRate: 0,
         estimatedCost: 0,
         actualCost: 0,
+        contractType: 'horas' as const,
+        contractValue: 0,
+        contractDuration: 0,
       });
     }
   }, [wbsItem, open]);
@@ -191,6 +200,52 @@ const WBSItemDialog = ({ trigger, wbsItem, onSave }: WBSItemDialogProps) => {
               />
             </div>
           </div>
+
+          <div>
+            <Label htmlFor="contractType">Tipo de Contrato</Label>
+            <Select
+              value={formData.contractType}
+              onValueChange={(value: 'horas' | 'valor-fixo' | 'consultoria-projeto') => 
+                setFormData({ ...formData, contractType: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o tipo de contrato" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="horas">Por Horas</SelectItem>
+                <SelectItem value="valor-fixo">Valor Fixo</SelectItem>
+                <SelectItem value="consultoria-projeto">Consultoria/Projeto</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {formData.contractType !== 'horas' && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="contractValue">Valor do Contrato (R$)</Label>
+                <Input
+                  id="contractValue"
+                  type="number"
+                  value={formData.contractValue}
+                  onChange={(e) => setFormData({ ...formData, contractValue: Number(e.target.value) })}
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              {formData.contractType === 'consultoria-projeto' && (
+                <div>
+                  <Label htmlFor="contractDuration">Duração (meses)</Label>
+                  <Input
+                    id="contractDuration"
+                    type="number"
+                    value={formData.contractDuration}
+                    onChange={(e) => setFormData({ ...formData, contractDuration: Number(e.target.value) })}
+                    min="0"
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="grid grid-cols-3 gap-4">
             <div>

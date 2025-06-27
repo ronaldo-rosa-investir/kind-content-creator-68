@@ -73,12 +73,16 @@ const ProjectLifecycle = () => {
     }
   };
 
+  const handleMethodologyChange = (value: string) => {
+    setSelectedMethodology(value as 'tradicional' | 'agil' | 'hibrido');
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Ciclo de Vida do Projeto</h1>
         <div className="flex gap-2">
-          <Select value={selectedMethodology} onValueChange={setSelectedMethodology}>
+          <Select value={selectedMethodology} onValueChange={handleMethodologyChange}>
             <SelectTrigger className="w-40">
               <SelectValue />
             </SelectTrigger>
