@@ -1,6 +1,6 @@
 
 import { NavLink, useLocation } from "react-router-dom";
-import { Calendar, List, Check, Home, DollarSign, BookOpen, ClipboardCheck, Users, FileText } from "lucide-react";
+import { Calendar, List, Check, Home, DollarSign, BookOpen, ClipboardCheck, Users, FileText, FolderOpen, UserCircle, BarChart3, Settings } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -12,8 +12,16 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
-const items = [
-  { title: "Dashboard", url: "/", icon: Home },
+const globalItems = [
+  { title: "Dashboard", url: "/dashboard", icon: Home },
+  { title: "Meus Projetos", url: "/projetos", icon: FolderOpen },
+  { title: "Clientes", url: "/clientes", icon: UserCircle },
+  { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
+  { title: "Configurações", url: "/config", icon: Settings },
+];
+
+const projectItems = [
+  { title: "Dashboard Projeto", url: "/", icon: Home },
   { title: "TAP", url: "/tap", icon: FileText },
   { title: "Fases do Projeto", url: "/fases", icon: Calendar },
   { title: "Itens EAP", url: "/eap", icon: List },
@@ -51,11 +59,40 @@ export function AppSidebar() {
         
         <SidebarGroup className="px-4 py-4">
           <SidebarGroupLabel className="text-gray-700 font-medium mb-2">
-            Navegação Principal
+            Navegação Global
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
-              {items.map((item) => (
+              {globalItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      className={({ isActive: navIsActive }) =>
+                        `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                          navIsActive || isActive(item.url)
+                            ? "bg-blue-50 text-blue-700 border-l-4 border-blue-600 font-medium"
+                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        }`
+                      }
+                    >
+                      <item.icon className="h-5 w-5" />
+                      <span className="font-medium">{item.title}</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup className="px-4 py-4">
+          <SidebarGroupLabel className="text-gray-700 font-medium mb-2">
+            Projeto Atual
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu className="space-y-1">
+              {projectItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink

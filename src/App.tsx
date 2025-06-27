@@ -6,6 +6,16 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProjectProvider } from "@/contexts/ProjectContext";
 import Layout from "@/components/Layout";
+
+// Páginas Globais
+import Dashboard from "./pages/Dashboard";
+import Projects from "./pages/Projects";
+import NewProject from "./pages/NewProject";
+import Clients from "./pages/Clients";
+import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
+
+// Páginas do Projeto
 import Index from "./pages/Index";
 import Phases from "./pages/Phases";
 import WBS from "./pages/WBS";
@@ -35,6 +45,15 @@ const App = () => (
         <BrowserRouter>
           <Layout>
             <Routes>
+              {/* Navegação Global */}
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/projetos" element={<Projects />} />
+              <Route path="/projetos/novo" element={<NewProject />} />
+              <Route path="/clientes" element={<Clients />} />
+              <Route path="/relatorios" element={<Reports />} />
+              <Route path="/config" element={<Settings />} />
+              
+              {/* Projeto Específico */}
               <Route path="/" element={<Index />} />
               <Route path="/tap" element={<ProjectCharter />} />
               <Route path="/ciclo-vida" element={<ProjectLifecycle />} />
@@ -51,7 +70,7 @@ const App = () => (
               <Route path="/requisitos" element={<Requirements />} />
               <Route path="/escopo" element={<ScopeStatement />} />
               <Route path="/validacao" element={<ScopeValidation />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>
