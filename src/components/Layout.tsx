@@ -26,7 +26,7 @@ import ScopeValidation from "@/pages/ScopeValidation";
 import LessonsLearned from "@/pages/LessonsLearned";
 import ClosureChecklist from "@/pages/ClosureChecklist";
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+export default function Layout() {
   const { currentView, activeProject } = useProject();
 
   const renderContent = () => {
