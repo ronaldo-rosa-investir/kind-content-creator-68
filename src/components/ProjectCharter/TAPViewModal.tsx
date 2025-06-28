@@ -31,14 +31,26 @@ const TAPViewModal: React.FC<TAPViewModalProps> = ({
             <DialogTitle>
               Visualização do TAP - {charter.projectName} (v{version})
             </DialogTitle>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={onPrint}>
+            <div className="tap-actions no-print flex gap-2">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={onPrint}
+                className="btn-print"
+                title="Imprimir TAP"
+              >
                 <Printer className="h-4 w-4 mr-2" />
-                Imprimir
+                🖨️ Imprimir
               </Button>
-              <Button size="sm" variant="outline" onClick={onDownload}>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={onDownload}
+                className="btn-pdf"
+                title="Download PDF"
+              >
                 <Download className="h-4 w-4 mr-2" />
-                Download PDF
+                📄 Download PDF
               </Button>
               <Button size="sm" variant="ghost" onClick={onClose}>
                 <X className="h-4 w-4" />
