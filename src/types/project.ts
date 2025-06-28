@@ -204,6 +204,8 @@ export interface ProjectCharter {
   assumptions: string;
   basicTeam: TeamMemberBasic[];
   sponsorSignatures: SponsorSignature[];
+  approval?: TAPApproval;
+  approvalHistory?: TAPApprovalHistory[];
   createdAt: string;
   updatedAt: string;
 }
@@ -250,4 +252,27 @@ export interface ScheduleItem {
   progress: number;
   status: 'nao-iniciado' | 'em-andamento' | 'concluido' | 'atrasado';
   createdAt: string;
+}
+
+export type TAPStatus = 'rascunho' | 'pendente-aprovacao' | 'aprovado' | 'aprovado-com-ressalva' | 'rejeitado';
+
+export interface TAPApproval {
+  id: string;
+  status: TAPStatus;
+  submissionDate?: string;
+  approvalDate?: string;
+  approver?: string;
+  approverComments?: string;
+  conditions?: string; // Ressalvas/Condições
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TAPApprovalHistory {
+  id: string;
+  status: TAPStatus;
+  date: string;
+  approver: string;
+  comments?: string;
+  conditions?: string;
 }

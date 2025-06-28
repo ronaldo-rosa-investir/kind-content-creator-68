@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useProject } from '@/contexts/ProjectContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,14 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2, FileText, Edit, Users, Calendar, CheckCircle, Printer, Mail, Download } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Plus, Trash2, FileText, Edit, Users, Calendar, CheckCircle, Printer, Mail, Download, AlertTriangle, Clock, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { TeamMemberBasic, SponsorSignature } from '@/types/project';
+import { TeamMemberBasic, SponsorSignature, TAPStatus, TAPApproval } from '@/types/project';
 
 const ProjectCharter = () => {
   const { projectCharter, addProjectCharter, updateProjectCharter } = useProject();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
+  const [acceptedConditions, setAcceptedConditions] = useState(false);
   
   const [formData, setFormData] = useState({
     projectName: '',
@@ -35,7 +36,15 @@ const ProjectCharter = () => {
     constraints: '',
     assumptions: '',
     basicTeam: [] as TeamMemberBasic[],
-    sponsorSignatures: [] as SponsorSignature[]
+    sponsorSignatures: [] as SponsorSignature[],
+    approval: {
+      status: 'rascunho' as TAPStatus,
+      submissionDate: '',
+      approvalDate: '',
+      approver: '',
+      approverComments: '',
+      conditions: ''
+    }
   });
 
   const [completionStatus, setCompletionStatus] = useState({
@@ -67,7 +76,15 @@ const ProjectCharter = () => {
         constraints: charter.constraints,
         assumptions: charter.assumptions,
         basicTeam: charter.basicTeam || [],
-        sponsorSignatures: charter.sponsorSignatures || []
+        sponsorSignatures: charter.sponsorSignatures || [],
+        approval: charter.approval || {
+          status: 'rascunho',
+          submissionDate: '',
+          approvalDate: '',
+          approver: '',
+          approverComments: '',
+          conditions: ''
+        }
       });
 
       // Verificar status de completude
@@ -139,12 +156,99 @@ const ProjectCharter = () => {
     }));
   };
 
+  const getStatusBadge = (status: TAPStatus) => {
+    switch (status) {
+      case 'rascunho':
+        return <Badge variant="outline" className="text-gray-600">Rascunho</Badge>;
+      case 'pendente-aprovacao':
+        return <Badge className="bg-yellow-100 text-yellow-800"><Clock className="h-3 w-3 mr-1" />Pendente</Badge>;
+      case 'aprovado':
+        return <Badge className="bg-green-100 text-green-800"><CheckCircle className="h-3 w-3 mr-1" />Aprovado</Badge>;
+      case 'aprovado-com-ressalva':
+        return <Badge className="bg-orange-100 text-orange-800"><AlertTriangle className="h-3 w-3 mr-1" />Aprovado com Ressalva</Badge>;
+      case 'rejeitado':
+        return <Badge className="bg-red-100 text-red-800"><XCircle className="h-3 w-3 mr-1" />Rejeitado</Badge>;
+      default:
+        return <Badge variant="outline">-</Badge>;
+    }
+  };
+
+  const handleStatusChange = (newStatus: TAPStatus) => {
+    const now = new Date().toISOString();
+    let updatedApproval = { ...formData.approval, status: newStatus };
+
+    if (newStatus === 'pendente-aprovacao' && !formData.approval?.submissionDate) {
+      updatedApproval.submissionDate = now;
+    }
+
+    if ((newStatus === 'aprovado' || newStatus === 'aprovado-com-ressalva') && !formData.approval?.approvalDate) {
+      updatedApproval.approvalDate = now;
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      approval: updatedApproval
+    }));
+  };
+
+  const validateApprovalForm = () => {
+    const { approval } = formData;
+    
+    if (!approval?.status || approval.status === 'rascunho') return true;
+
+    if (!approval.approver) {
+      toast({
+        title: "Erro de validação",
+        description: "Aprovador responsável é obrigatório.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (approval.status === 'rejeitado' && !approval.approverComments) {
+      toast({
+        title: "Erro de validação", 
+        description: "Comentários do aprovador são obrigatórios para rejeição.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (approval.status === 'aprovado-com-ressalva' && !approval.conditions) {
+      toast({
+        title: "Erro de validação",
+        description: "Ressalvas/Condições são obrigatórias para aprovação com ressalva.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if ((approval.status === 'aprovado' || approval.status === 'aprovado-com-ressalva') && !approval.approvalDate) {
+      toast({
+        title: "Erro de validação",
+        description: "Data de aprovação é obrigatória.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateApprovalForm()) return;
     
     if (projectCharter.length > 0) {
       updateProjectCharter(projectCharter[0].id, {
         ...formData,
+        approval: {
+          ...formData.approval,
+          id: formData.approval?.id || Date.now().toString(),
+          createdAt: formData.approval?.createdAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
         updatedAt: new Date().toISOString()
       });
       toast({
@@ -152,7 +256,15 @@ const ProjectCharter = () => {
         description: "O Termo de Abertura do Projeto foi atualizado.",
       });
     } else {
-      addProjectCharter(formData);
+      addProjectCharter({
+        ...formData,
+        approval: {
+          ...formData.approval,
+          id: Date.now().toString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+      });
       toast({
         title: "TAP criado com sucesso!",
         description: "O Termo de Abertura do Projeto foi criado.",
@@ -160,6 +272,30 @@ const ProjectCharter = () => {
     }
     
     setIsEditing(false);
+  };
+
+  const handleSendForApproval = () => {
+    handleStatusChange('pendente-aprovacao');
+    toast({
+      title: "TAP enviado para aprovação",
+      description: "O TAP foi enviado para análise do aprovador.",
+    });
+  };
+
+  const handleStartProject = () => {
+    if (formData.approval?.status === 'aprovado-com-ressalva' && !acceptedConditions) {
+      toast({
+        title: "Condições não aceitas",
+        description: "Você deve aceitar as condições antes de iniciar o projeto.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    toast({
+      title: "Projeto iniciado!",
+      description: "O projeto foi iniciado com base no TAP aprovado.",
+    });
   };
 
   const handlePrint = () => {
@@ -182,6 +318,7 @@ const ProjectCharter = () => {
 
   const currentCharter = projectCharter.length > 0 ? projectCharter[0] : null;
   const isComplete = Object.values(completionStatus).every(status => status);
+  const canEdit = !formData.approval?.status || formData.approval.status === 'rascunho' || formData.approval.status === 'rejeitado';
 
   if (!isEditing && currentCharter) {
     return (
@@ -190,6 +327,7 @@ const ProjectCharter = () => {
           <div>
             <h1 className="text-3xl font-bold">Termo de Abertura do Projeto (TAP)</h1>
             <div className="flex items-center gap-2 mt-2">
+              {getStatusBadge(currentCharter.approval?.status || 'rascunho')}
               {isComplete ? (
                 <Badge className="bg-green-100 text-green-800">
                   <CheckCircle className="h-4 w-4 mr-1" />
@@ -215,15 +353,46 @@ const ProjectCharter = () => {
               <Mail className="h-4 w-4 mr-2" />
               E-mail
             </Button>
-            <Button onClick={() => setIsEditing(true)}>
-              <Edit className="h-4 w-4 mr-2" />
-              Editar TAP
-            </Button>
+            {canEdit && (
+              <Button onClick={() => setIsEditing(true)}>
+                <Edit className="h-4 w-4 mr-2" />
+                Editar TAP
+              </Button>
+            )}
+            {currentCharter.approval?.status === 'aprovado' && (
+              <Button onClick={handleStartProject} className="bg-green-600 hover:bg-green-700">
+                Iniciar Projeto
+              </Button>
+            )}
+            {currentCharter.approval?.status === 'aprovado-com-ressalva' && (
+              <Button onClick={handleStartProject} className="bg-orange-600 hover:bg-orange-700">
+                Aceitar e Iniciar
+              </Button>
+            )}
           </div>
         </div>
 
+        {/* Alertas baseados no status */}
+        {currentCharter.approval?.status === 'aprovado-com-ressalva' && (
+          <Alert className="border-orange-200 bg-orange-50">
+            <AlertTriangle className="h-4 w-4 text-orange-600" />
+            <AlertDescription className="text-orange-800">
+              <strong>Projeto aprovado com condições.</strong> Veja as ressalvas antes de iniciar o projeto.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {currentCharter.approval?.status === 'rejeitado' && (
+          <Alert className="border-red-200 bg-red-50">
+            <XCircle className="h-4 w-4 text-red-600" />
+            <AlertDescription className="text-red-800">
+              <strong>TAP rejeitado.</strong> Veja os comentários do aprovador e faça as correções necessárias.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <Tabs defaultValue="info" className="w-full">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="info" className="flex items-center gap-1">
               <FileText className="h-4 w-4" />
               Info Básica
@@ -234,6 +403,7 @@ const ProjectCharter = () => {
             <TabsTrigger value="budget">Orçamento</TabsTrigger>
             <TabsTrigger value="team">Equipe</TabsTrigger>
             <TabsTrigger value="signatures">Assinaturas</TabsTrigger>
+            <TabsTrigger value="approval">Aprovação</TabsTrigger>
           </TabsList>
 
           <TabsContent value="info" className="space-y-4">
@@ -445,6 +615,80 @@ const ProjectCharter = () => {
               </Card>
             )}
           </TabsContent>
+
+          <TabsContent value="approval" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  Status de Aprovação do TAP
+                  {getStatusBadge(currentCharter.approval?.status || 'rascunho')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="font-semibold">Status</Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {currentCharter.approval?.status === 'rascunho' ? 'Rascunho' :
+                       currentCharter.approval?.status === 'pendente-aprovacao' ? 'Pendente de Aprovação' :
+                       currentCharter.approval?.status === 'aprovado' ? 'Aprovado' :
+                       currentCharter.approval?.status === 'aprovado-com-ressalva' ? 'Aprovado com Ressalva' :
+                       currentCharter.approval?.status === 'rejeitado' ? 'Rejeitado' : 'Não definido'}
+                    </p>
+                  </div>
+                  {currentCharter.approval?.submissionDate && (
+                    <div>
+                      <Label className="font-semibold">Data de Envio</Label>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {new Date(currentCharter.approval.submissionDate).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
+                  )}
+                  {currentCharter.approval?.approvalDate && (
+                    <div>
+                      <Label className="font-semibold">Data de Aprovação</Label>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {new Date(currentCharter.approval.approvalDate).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
+                  )}
+                  {currentCharter.approval?.approver && (
+                    <div>
+                      <Label className="font-semibold">Aprovador</Label>
+                      <p className="text-sm text-muted-foreground mt-1">{currentCharter.approval.approver}</p>
+                    </div>
+                  )}
+                </div>
+
+                {currentCharter.approval?.conditions && (
+                  <div className="p-4 border border-orange-200 bg-orange-50 rounded-lg">
+                    <Label className="font-semibold text-orange-800">Condições e Ressalvas</Label>
+                    <p className="text-sm text-orange-700 mt-2 whitespace-pre-wrap">{currentCharter.approval.conditions}</p>
+                    
+                    {currentCharter.approval.status === 'aprovado-com-ressalva' && (
+                      <div className="mt-4 flex items-center space-x-2">
+                        <Checkbox 
+                          id="accept-conditions" 
+                          checked={acceptedConditions}
+                          onCheckedChange={(checked) => setAcceptedConditions(checked as boolean)}
+                        />
+                        <Label htmlFor="accept-conditions" className="text-sm text-orange-800">
+                          Li e compreendi as ressalvas, e aceito as condições para iniciar o projeto
+                        </Label>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {currentCharter.approval?.approverComments && (
+                  <div className="p-4 border border-gray-200 bg-gray-50 rounded-lg">
+                    <Label className="font-semibold">Comentários do Aprovador</Label>
+                    <p className="text-sm text-muted-foreground mt-2 whitespace-pre-wrap">{currentCharter.approval.approverComments}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
     );
@@ -460,7 +704,7 @@ const ProjectCharter = () => {
 
       <form onSubmit={handleSubmit}>
         <Tabs defaultValue="info" className="w-full">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="info">Info Básica</TabsTrigger>
             <TabsTrigger value="objectives">Objetivos</TabsTrigger>
             <TabsTrigger value="scope">Escopo</TabsTrigger>
@@ -468,6 +712,7 @@ const ProjectCharter = () => {
             <TabsTrigger value="budget">Orçamento</TabsTrigger>
             <TabsTrigger value="team">Equipe</TabsTrigger>
             <TabsTrigger value="signatures">Assinaturas</TabsTrigger>
+            <TabsTrigger value="approval">Aprovação</TabsTrigger>
           </TabsList>
 
           <TabsContent value="info" className="space-y-4">
@@ -837,10 +1082,137 @@ const ProjectCharter = () => {
             </Card>
           </TabsContent>
 
+          <TabsContent value="approval" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Aprovação do TAP</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="status">Status do TAP</Label>
+                    <Select
+                      value={formData.approval?.status || 'rascunho'}
+                      onValueChange={(value: TAPStatus) => handleStatusChange(value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="rascunho">Rascunho</SelectItem>
+                        <SelectItem value="pendente-aprovacao">Pendente de Aprovação</SelectItem>
+                        <SelectItem value="aprovado">Aprovado</SelectItem>
+                        <SelectItem value="aprovado-com-ressalva">Aprovado com Ressalva</SelectItem>
+                        <SelectItem value="rejeitado">Rejeitado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {formData.approval?.status && formData.approval.status !== 'rascunho' && (
+                    <div>
+                      <Label htmlFor="approver">Aprovador Responsável</Label>
+                      <Input
+                        id="approver"
+                        value={formData.approval?.approver || ''}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          approval: { ...prev.approval!, approver: e.target.value }
+                        }))}
+                        placeholder="Nome do aprovador"
+                        required
+                      />
+                    </div>
+                  )}
+
+                  {formData.approval?.submissionDate && (
+                    <div>
+                      <Label htmlFor="submissionDate">Data de Envio</Label>
+                      <Input
+                        id="submissionDate"
+                        type="date"
+                        value={formData.approval.submissionDate.split('T')[0]}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          approval: { ...prev.approval!, submissionDate: e.target.value }
+                        }))}
+                        readOnly
+                      />
+                    </div>
+                  )}
+
+                  {(formData.approval?.status === 'aprovado' || formData.approval?.status === 'aprovado-com-ressalva') && (
+                    <div>
+                      <Label htmlFor="approvalDate">Data de Aprovação</Label>
+                      <Input
+                        id="approvalDate"
+                        type="date"
+                        value={formData.approval?.approvalDate ? formData.approval.approvalDate.split('T')[0] : ''}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          approval: { ...prev.approval!, approvalDate: e.target.value }
+                        }))}
+                        required
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {formData.approval?.status === 'aprovado-com-ressalva' && (
+                  <div>
+                    <Label htmlFor="conditions">Condições e Ressalvas para Aprovação</Label>
+                    <Textarea
+                      id="conditions"
+                      value={formData.approval?.conditions || ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        approval: { ...prev.approval!, conditions: e.target.value }
+                      }))}
+                      placeholder="Descreva as condições que devem ser atendidas..."
+                      className="min-h-[120px] border-orange-200 focus:border-orange-400"
+                      maxLength={2000}
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {(formData.approval?.conditions || '').length}/2000 caracteres
+                    </p>
+                  </div>
+                )}
+
+                {(formData.approval?.status === 'rejeitado' || formData.approval?.status === 'aprovado-com-ressalva') && (
+                  <div>
+                    <Label htmlFor="approverComments">
+                      {formData.approval?.status === 'rejeitado' ? 'Comentários do Aprovador (Obrigatório)' : 'Comentários do Aprovador'}
+                    </Label>
+                    <Textarea
+                      id="approverComments"
+                      value={formData.approval?.approverComments || ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        approval: { ...prev.approval!, approverComments: e.target.value }
+                      }))}
+                      placeholder={formData.approval?.status === 'rejeitado' 
+                        ? "Descreva os motivos da rejeição e as correções necessárias..." 
+                        : "Comentários adicionais do aprovador..."}
+                      className="min-h-[100px]"
+                      required={formData.approval?.status === 'rejeitado'}
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <div className="flex gap-4 mt-6">
             <Button type="submit">
               {currentCharter ? 'Atualizar TAP' : 'Criar TAP'}
             </Button>
+            
+            {formData.approval?.status === 'rascunho' && (
+              <Button type="button" variant="outline" onClick={handleSendForApproval}>
+                Enviar para Aprovação
+              </Button>
+            )}
+            
             {isEditing && (
               <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
                 Cancelar
