@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useProject } from "@/contexts/ProjectContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
