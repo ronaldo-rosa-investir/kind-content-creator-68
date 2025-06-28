@@ -36,7 +36,7 @@ export const WBSItemDialog = ({ trigger, wbsItem }: WBSItemDialogProps) => {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState({
-    parentId: wbsItem?.parentId || '',
+    parentId: wbsItem?.parentId || 'root',
     activity: wbsItem?.activity || '',
     itemType: wbsItem?.itemType || 'componente',
     responsible: wbsItem?.responsible || '',
@@ -46,14 +46,12 @@ export const WBSItemDialog = ({ trigger, wbsItem }: WBSItemDialogProps) => {
   });
 
   const generateCode = () => {
-    return WBSHierarchyManager.generateNextCode(
-      formData.parentId || null, 
-      wbsItems
-    );
+    const actualParentId = formData.parentId === 'root' ? null : formData.parentId;
+    return WBSHierarchyManager.generateNextCode(actualParentId, wbsItems);
   };
 
   const getAvailableParents = () => {
-    const parents = [{ id: '', label: 'Raiz (Nível 1)' }];
+    const parents = [{ id: 'root', label: 'Raiz (Nível 1)' }];
     
     wbsItems
       .filter(item => wbsItem ? item.id !== wbsItem.id : true)
@@ -99,8 +97,10 @@ export const WBSItemDialog = ({ trigger, wbsItem }: WBSItemDialogProps) => {
     }
 
     // Verificar referência circular
-    if (formData.parentId && wbsItem && 
-        WBSHierarchyManager.hasCircularReference(formData.parentId, wbsItem.id, wbsItems)) {
+    const actualParentId = formData.parentId === 'root' ? null : formData.parentId;
+    
+    if (actualParentId && wbsItem && 
+        WBSHierarchyManager.hasCircularReference(actualParentId, wbsItem.id, wbsItems)) {
       toast({
         title: "Erro de validação",
         description: "Não é possível criar uma referência circular.",
@@ -115,7 +115,7 @@ export const WBSItemDialog = ({ trigger, wbsItem }: WBSItemDialogProps) => {
       code: finalCode,
       activity: formData.activity,
       itemType: formData.itemType as 'projeto' | 'entrega' | 'componente' | 'pacote-trabalho',
-      parentId: formData.parentId || undefined,
+      parentId: actualParentId || undefined,
       responsible: formData.responsible,
       estimatedCost: formData.estimatedCost,
       description: formData.description,
