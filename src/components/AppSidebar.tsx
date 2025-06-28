@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useLocation, Link } from "react-router-dom";
 import {
@@ -57,7 +56,7 @@ const globalNavItems = [
   { title: "Configurações", url: "/config", icon: Settings },
 ];
 
-// Estrutura PMBOK para navegação do projeto
+// Estrutura PMBOK para navegação do projeto - ORDEM REORGANIZADA
 const projectNavSections = [
   {
     title: "Dashboard do Projeto",
@@ -76,17 +75,18 @@ const projectNavSections = [
     icon: FileText,
     view: null,
     items: [
-      { title: "Cronograma", view: "cronograma", icon: Calendar },
-      { title: "EAP", view: "eap", icon: ListTodo },
-      { title: "Dicionário EAP", view: "dicionario", icon: BookOpen },
-      { title: "Escopo", view: "escopo", icon: Target },
-      { title: "Requisitos", view: "requisitos", icon: FileStack },
-      { title: "Plano de Custos", view: "plano-custos", icon: DollarSign },
-      { title: "Plano de Riscos", view: "plano-riscos", icon: AlertTriangle },
-      { title: "Plano de Qualidade", view: "plano-qualidade", icon: Shield },
-      { title: "Plano de Recursos", view: "plano-recursos", icon: Users },
-      { title: "Plano de Comunicações", view: "plano-comunicacoes", icon: MessageSquare },
-      { title: "Plano de Aquisições", view: "plano-aquisicoes", icon: FolderOpen },
+      // NOVA ORDEM METODOLÓGICA CORRETA
+      { title: "Escopo", view: "escopo", icon: Target }, // 1º - Base para tudo
+      { title: "EAP", view: "eap", icon: ListTodo }, // 2º - Baseado no escopo
+      { title: "Dicionário EAP", view: "dicionario", icon: BookOpen }, // 3º - Detalha a EAP
+      { title: "Requisitos", view: "requisitos", icon: FileStack }, // 4º - Especifica critérios
+      { title: "Cronograma", view: "cronograma", icon: Calendar }, // 5º - Baseado na EAP
+      { title: "Plano de Custos", view: "plano-custos", icon: DollarSign }, // 6º - Baseado no cronograma
+      { title: "Plano de Riscos", view: "plano-riscos", icon: AlertTriangle }, // 7º - Análise de riscos
+      { title: "Plano de Qualidade", view: "plano-qualidade", icon: Shield }, // 8º - Critérios de qualidade
+      { title: "Plano de Recursos", view: "plano-recursos", icon: Users }, // 9º - Recursos necessários
+      { title: "Plano de Comunicações", view: "plano-comunicacoes", icon: MessageSquare }, // 10º - Comunicação
+      { title: "Plano de Aquisições", view: "plano-aquisicoes", icon: FolderOpen }, // 11º - Aquisições
     ]
   },
   {
