@@ -2,27 +2,27 @@
 import { useProject } from "@/contexts/ProjectContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, FolderOpen } from "lucide-react";
-import WBSItemDialog from "@/components/WBSItemDialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { Plus, FileText, Download } from "lucide-react";
+import { WBSItemDialog } from "@/components/WBS/WBSItemDialog";
+import { WBSHierarchyTree } from "@/components/WBS/WBSHierarchyTree";
+import { WBSStatistics } from "@/components/WBS/WBSStatistics";
 import { useToast } from "@/hooks/use-toast";
+import { WBSHierarchyManager } from "@/utils/wbsHierarchyUtils";
 
 const WBS = () => {
   const { wbsItems, deleteWBSItem } = useProject();
   const { toast } = useToast();
 
   const handleDeleteWBSItem = (itemId: string) => {
+    if (!WBSHierarchyManager.canDelete(itemId, wbsItems)) {
+      toast({
+        title: "Não é possível excluir",
+        description: "Este item possui filhos e não pode ser excluído.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     deleteWBSItem(itemId);
     toast({
       title: "Item EAP excluído",
@@ -30,121 +30,74 @@ const WBS = () => {
     });
   };
 
-  const totalCost = wbsItems.reduce((acc, item) => acc + (item.estimatedCost || 0), 0);
+  const hierarchyItems = WBSHierarchyManager.buildHierarchy(wbsItems);
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Estrutura Analítica do Projeto (EAP)</h1>
-        <WBSItemDialog
-          trigger={
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Item EAP
-            </Button>
-          }
-        />
+        <div>
+          <h1 className="text-3xl font-bold">Estrutura Analítica do Projeto (EAP)</h1>
+          <p className="text-muted-foreground mt-1">
+            Organize seu projeto em uma hierarquia de entregas e pacotes de trabalho
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline">
+            <FileText className="h-4 w-4 mr-2" />
+            Gerar Cronograma
+          </Button>
+          <Button variant="outline">
+            <Download className="h-4 w-4 mr-2" />
+            Exportar
+          </Button>
+          <WBSItemDialog
+            trigger={
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Item EAP
+              </Button>
+            }
+          />
+        </div>
       </div>
 
       {/* Statistics */}
-      <div className="grid grid-cols-2 gap-4">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{wbsItems.length}</div>
-            <div className="text-sm text-muted-foreground">Total de Itens</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">
-              R$ {totalCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </div>
-            <div className="text-sm text-muted-foreground">Custo Total</div>
-          </CardContent>
-        </Card>
-      </div>
+      <WBSStatistics wbsItems={wbsItems} />
 
-      {/* WBS Items List */}
+      {/* WBS Hierarchy */}
       {wbsItems.length > 0 ? (
         <Card>
           <CardHeader>
-            <CardTitle>Itens da EAP</CardTitle>
+            <CardTitle>Estrutura Hierárquica</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {wbsItems.map((item) => (
-                <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                  <div className="flex items-center gap-3">
-                    <FolderOpen className="h-5 w-5 text-blue-600" />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm bg-muted px-2 py-1 rounded">
-                          {item.code}
-                        </span>
-                        <span className="font-semibold">{item.activity}</span>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                        <span>👤 {item.responsible}</span>
-                        <span>💰 R$ {(item.estimatedCost || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                      </div>
-                      {item.description && (
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {item.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <WBSItemDialog
-                      trigger={
-                        <Button variant="outline" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      }
-                      wbsItem={item}
-                    />
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-800">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Excluir Item EAP</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Tem certeza que deseja excluir o item "{item.code} - {item.activity}"? 
-                            Esta ação não pode ser desfeita.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction 
-                            onClick={() => handleDeleteWBSItem(item.id)}
-                            className="bg-red-600 hover:bg-red-700"
-                          >
-                            Excluir
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <WBSHierarchyTree
+              items={hierarchyItems}
+              onEdit={(item) => {/* handled by dialog */}}
+              onDelete={handleDeleteWBSItem}
+              canDelete={(id) => WBSHierarchyManager.canDelete(id, wbsItems)}
+            />
           </CardContent>
         </Card>
       ) : (
-        /* Empty state when no items exist */
+        /* Empty state */
         <div className="text-center py-12">
-          <div className="text-6xl mb-4">📋</div>
-          <h3 className="text-xl font-semibold mb-2">Nenhum item criado ainda</h3>
+          <div className="text-6xl mb-4">📊</div>
+          <h3 className="text-xl font-semibold mb-2">Estrutura Analítica do Projeto vazia</h3>
           <p className="text-muted-foreground mb-2">
-            Organize seu projeto em partes menores para facilitar o gerenciamento
+            Organize seu projeto em uma hierarquia clara de entregas
           </p>
           <p className="text-sm text-muted-foreground mb-6">
-            Comece criando o primeiro item do projeto
+            Defina os principais componentes, entregas e pacotes de trabalho
           </p>
+          <WBSItemDialog
+            trigger={
+              <Button size="lg">
+                <Plus className="h-4 w-4 mr-2" />
+                Criar Primeiro Item EAP
+              </Button>
+            }
+          />
         </div>
       )}
     </div>

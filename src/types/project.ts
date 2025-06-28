@@ -22,9 +22,9 @@ export interface WBSItem {
   daysAfterStart: number;
   responsible: string;
   description?: string;
+  notes?: string;
   deliverables?: string;
   acceptanceCriteria?: string;
-  notes?: string;
   requirements?: string;
   risks?: string;
   estimatedHours: number;
