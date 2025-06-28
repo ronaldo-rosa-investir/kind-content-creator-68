@@ -143,6 +143,14 @@ const EnhancedWBSPage = () => {
     setParentForNewItem(null);
   };
 
+  const handleHelp = () => {
+    console.log('Help clicked');
+    toast({
+      title: "Guia Rápido",
+      description: "Documentação de ajuda será implementada em breve.",
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -155,7 +163,7 @@ const EnhancedWBSPage = () => {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => console.log('Help clicked')}>
+          <Button variant="outline" onClick={handleHelp}>
             <HelpCircle className="h-4 w-4 mr-2" />
             Guia Rápido
           </Button>

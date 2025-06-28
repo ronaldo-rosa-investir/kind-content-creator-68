@@ -8,10 +8,12 @@ import { WBSHierarchyTree } from "@/components/WBS/WBSHierarchyTree";
 import { WBSStatistics } from "@/components/WBS/WBSStatistics";
 import { useToast } from "@/hooks/use-toast";
 import { WBSHierarchyManager } from "@/utils/wbsHierarchyUtils";
+import { useState } from "react";
 
 const WBS = () => {
   const { wbsItems, deleteWBSItem } = useProject();
   const { toast } = useToast();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleDeleteWBSItem = (itemId: string) => {
     if (!WBSHierarchyManager.canDelete(itemId, wbsItems)) {
@@ -30,6 +32,32 @@ const WBS = () => {
     });
   };
 
+  const handleNewItem = () => {
+    console.log('Opening new WBS item dialog');
+    setIsDialogOpen(true);
+  };
+
+  const handleGenerateSchedule = () => {
+    console.log('Generate schedule clicked');
+    toast({
+      title: "Gerar Cronograma",
+      description: "Funcionalidade de geração de cronograma será implementada em breve.",
+    });
+  };
+
+  const handleExport = () => {
+    console.log('Export clicked');
+    toast({
+      title: "Exportar EAP",
+      description: "Funcionalidade de exportação será implementada em breve.",
+    });
+  };
+
+  const handleDialogClose = () => {
+    console.log('Dialog closing');
+    setIsDialogOpen(false);
+  };
+
   const hierarchyItems = WBSHierarchyManager.buildHierarchy(wbsItems);
 
   return (
@@ -42,22 +70,24 @@ const WBS = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button 
+            variant="outline"
+            onClick={handleGenerateSchedule}
+          >
             <FileText className="h-4 w-4 mr-2" />
             Gerar Cronograma
           </Button>
-          <Button variant="outline">
+          <Button 
+            variant="outline"
+            onClick={handleExport}
+          >
             <Download className="h-4 w-4 mr-2" />
             Exportar
           </Button>
-          <WBSItemDialog
-            trigger={
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Novo Item EAP
-              </Button>
-            }
-          />
+          <Button onClick={handleNewItem}>
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Item EAP
+          </Button>
         </div>
       </div>
 
@@ -90,16 +120,19 @@ const WBS = () => {
           <p className="text-sm text-muted-foreground mb-6">
             Defina os principais componentes, entregas e pacotes de trabalho
           </p>
-          <WBSItemDialog
-            trigger={
-              <Button size="lg">
-                <Plus className="h-4 w-4 mr-2" />
-                Criar Primeiro Item EAP
-              </Button>
-            }
-          />
+          <Button size="lg" onClick={handleNewItem}>
+            <Plus className="h-4 w-4 mr-2" />
+            Criar Primeiro Item EAP
+          </Button>
         </div>
       )}
+
+      {/* Dialog for creating/editing WBS items */}
+      <WBSItemDialog
+        trigger={<div />}
+        isOpen={isDialogOpen}
+        onOpenChange={handleDialogClose}
+      />
     </div>
   );
 };
