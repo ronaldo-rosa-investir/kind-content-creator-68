@@ -1,6 +1,6 @@
 
 import { WBSItem } from '@/types/project';
-import { WBSItemHierarchy } from '@/types/wbs';
+import { WBSItemHierarchy, WBSStatistics } from '@/types/wbs';
 
 export class WBSHierarchyManager {
   static buildHierarchy(flatItems: WBSItem[]): WBSItemHierarchy[] {
@@ -125,10 +125,10 @@ export class WBSHierarchyManager {
     return checkPath(parentId);
   }
 
-  static calculateStatistics(items: WBSItem[]): any {
+  static calculateStatistics(items: WBSItem[]): WBSStatistics {
     const hierarchy = this.buildHierarchy(items);
     
-    const stats = {
+    const stats: WBSStatistics = {
       totalItems: items.length,
       itemsByLevel: {} as { [level: number]: number },
       totalCost: items.reduce((sum, item) => sum + (item.estimatedCost || 0), 0),

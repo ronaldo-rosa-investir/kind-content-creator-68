@@ -3,13 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { WBSHierarchyManager } from '@/utils/wbsHierarchyUtils';
 import { WBSItem } from '@/types/project';
+import { WBSStatistics as WBSStatisticsType } from '@/types/wbs';
 
 interface WBSStatisticsProps {
   wbsItems: WBSItem[];
 }
 
 export const WBSStatistics = ({ wbsItems }: WBSStatisticsProps) => {
-  const stats = WBSHierarchyManager.calculateStatistics(wbsItems);
+  const stats: WBSStatisticsType = WBSHierarchyManager.calculateStatistics(wbsItems);
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -60,8 +61,8 @@ export const WBSStatistics = ({ wbsItems }: WBSStatisticsProps) => {
             <div className="mt-4">
               <div className="text-sm font-medium mb-2">Responsáveis:</div>
               <div className="flex flex-wrap gap-1">
-                {stats.uniqueResponsibles.map((responsible) => (
-                  <Badge key={responsible} variant="secondary" className="text-xs">
+                {stats.uniqueResponsibles.map((responsible, index) => (
+                  <Badge key={`${responsible}-${index}`} variant="secondary" className="text-xs">
                     {responsible}
                   </Badge>
                 ))}
