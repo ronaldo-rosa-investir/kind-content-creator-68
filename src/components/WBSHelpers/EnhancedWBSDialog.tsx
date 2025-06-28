@@ -86,14 +86,19 @@ const EnhancedWBSDialog = ({ trigger, wbsItem }: EnhancedWBSDialogProps) => {
     }
     
     const itemData = {
-      ...formData,
       code: finalCode,
-      itemType: 'projeto', // Tipo padrão simplificado
-      phaseId: '', // Não usado mais
+      activity: formData.activity,
+      responsible: formData.responsible,
+      estimatedCost: formData.estimatedCost,
+      description: formData.description,
+      itemType: 'projeto' as const,
+      phaseId: '',
+      daysAfterStart: 0,
       estimatedHours: 0,
+      actualHours: 0,
       hourlyRate: 0,
       actualCost: wbsItem?.actualCost || 0,
-      actualHours: wbsItem?.actualHours || 0
+      contractType: 'horas' as const
     };
 
     if (wbsItem) {
