@@ -37,14 +37,7 @@ const ProjectCharter = () => {
     assumptions: '',
     basicTeam: [] as TeamMemberBasic[],
     sponsorSignatures: [] as SponsorSignature[],
-    approval: {
-      status: 'rascunho' as TAPStatus,
-      submissionDate: '',
-      approvalDate: '',
-      approver: '',
-      approverComments: '',
-      conditions: ''
-    }
+    approval: null as TAPApproval | null
   });
 
   const [completionStatus, setCompletionStatus] = useState({
@@ -77,14 +70,7 @@ const ProjectCharter = () => {
         assumptions: charter.assumptions,
         basicTeam: charter.basicTeam || [],
         sponsorSignatures: charter.sponsorSignatures || [],
-        approval: charter.approval || {
-          status: 'rascunho',
-          submissionDate: '',
-          approvalDate: '',
-          approver: '',
-          approverComments: '',
-          conditions: ''
-        }
+        approval: charter.approval || null
       });
 
       // Verificar status de completude
@@ -175,26 +161,38 @@ const ProjectCharter = () => {
 
   const handleStatusChange = (newStatus: TAPStatus) => {
     const now = new Date().toISOString();
-    let updatedApproval = { ...formData.approval, status: newStatus };
-
-    if (newStatus === 'pendente-aprovacao' && !formData.approval?.submissionDate) {
-      updatedApproval.submissionDate = now;
+    
+    if (!formData.approval) {
+      // Create new approval object
+      const newApproval: TAPApproval = {
+        id: Date.now().toString(),
+        status: newStatus,
+        submissionDate: newStatus === 'pendente-aprovacao' ? now : '',
+        approvalDate: (newStatus === 'aprovado' || newStatus === 'aprovado-com-ressalva') ? now : '',
+        approver: '',
+        approverComments: '',
+        conditions: '',
+        createdAt: now,
+        updatedAt: now
+      };
+      setFormData(prev => ({ ...prev, approval: newApproval }));
+    } else {
+      // Update existing approval
+      const updatedApproval: TAPApproval = {
+        ...formData.approval,
+        status: newStatus,
+        submissionDate: newStatus === 'pendente-aprovacao' && !formData.approval.submissionDate ? now : formData.approval.submissionDate,
+        approvalDate: (newStatus === 'aprovado' || newStatus === 'aprovado-com-ressalva') && !formData.approval.approvalDate ? now : formData.approval.approvalDate,
+        updatedAt: now
+      };
+      setFormData(prev => ({ ...prev, approval: updatedApproval }));
     }
-
-    if ((newStatus === 'aprovado' || newStatus === 'aprovado-com-ressalva') && !formData.approval?.approvalDate) {
-      updatedApproval.approvalDate = now;
-    }
-
-    setFormData(prev => ({
-      ...prev,
-      approval: updatedApproval
-    }));
   };
 
   const validateApprovalForm = () => {
     const { approval } = formData;
     
-    if (!approval?.status || approval.status === 'rascunho') return true;
+    if (!approval || approval.status === 'rascunho') return true;
 
     if (!approval.approver) {
       toast({
@@ -240,15 +238,26 @@ const ProjectCharter = () => {
     
     if (!validateApprovalForm()) return;
     
+    // Ensure approval object exists with all required fields
+    const finalApproval: TAPApproval = formData.approval || {
+      id: Date.now().toString(),
+      status: 'rascunho',
+      submissionDate: '',
+      approvalDate: '',
+      approver: '',
+      approverComments: '',
+      conditions: '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
     if (projectCharter.length > 0) {
       updateProjectCharter(projectCharter[0].id, {
         ...formData,
         approval: {
-          ...formData.approval,
-          id: formData.approval?.id || Date.now().toString(),
-          createdAt: formData.approval?.createdAt || new Date().toISOString(),
+          ...finalApproval,
           updatedAt: new Date().toISOString()
-        } as TAPApproval,
+        },
         updatedAt: new Date().toISOString()
       });
       toast({
@@ -258,12 +267,7 @@ const ProjectCharter = () => {
     } else {
       addProjectCharter({
         ...formData,
-        approval: {
-          ...formData.approval,
-          id: Date.now().toString(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        } as TAPApproval
+        approval: finalApproval
       });
       toast({
         title: "TAP criado com sucesso!",
