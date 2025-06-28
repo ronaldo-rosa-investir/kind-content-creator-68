@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { DollarSign, TrendingUp, TrendingDown, Clock, Users, CheckCircle, AlertCircle, FileText, Target, Shield } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Clock, Users, CheckCircle, AlertCircle, FileText, Target, Shield, Calendar, ArrowRight, Download, Copy, Plus, Lightbulb, Activity } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Index = () => {
@@ -14,17 +14,34 @@ const Index = () => {
   // Calcular estatísticas básicas de forma mais realista
   const currentTAP = projectCharter.length > 0 ? projectCharter[0] : null;
   
-  // Verificar se o TAP tem os campos essenciais preenchidos
-  const isTAPComplete = currentTAP ? !!(
-    currentTAP.projectName && 
-    currentTAP.sponsors && 
-    currentTAP.projectManager && 
-    currentTAP.startDate && 
-    currentTAP.estimatedEndDate &&
-    currentTAP.projectObjectives &&
-    currentTAP.businessDemand &&
-    currentTAP.projectScope
-  ) : false;
+  // Verificar completude do TAP de forma mais detalhada
+  const tapFields = [
+    currentTAP?.projectName,
+    currentTAP?.sponsors,
+    currentTAP?.projectManager,
+    currentTAP?.startDate,
+    currentTAP?.estimatedEndDate,
+    currentTAP?.projectObjectives,
+    currentTAP?.businessDemand,
+    currentTAP?.projectScope,
+    currentTAP?.estimatedBudget
+  ];
+  
+  const tapCompleteness = tapFields.filter(field => field && field.toString().trim() !== '').length;
+  const tapCompletenessPercentage = Math.round((tapCompleteness / tapFields.length) * 100);
+  const isTAPComplete = tapCompletenessPercentage >= 80;
+
+  // Calcular status geral do projeto
+  const tapWeight = 30;
+  const eapWeight = 40;
+  const tasksWeight = 30;
+  
+  const eapCompleteness = wbsItems.length > 0 ? 100 : 0;
+  const tasksCompleteness = tasks.length > 0 ? (tasks.filter(task => task.completed).length / tasks.length) * 100 : 0;
+  
+  const overallProgress = Math.round(
+    (tapCompletenessPercentage * tapWeight + eapCompleteness * eapWeight + tasksCompleteness * tasksWeight) / 100
+  );
 
   // Estatísticas principais
   const totalTasks = tasks.length;
@@ -46,11 +63,74 @@ const Index = () => {
   }), { estimated: 0, actual: 0 });
 
   // Usar orçamento do TAP como referência principal
-  const projectBudget = currentTAP?.estimatedBudget || 150000; // Valor padrão apenas se não houver TAP
+  const projectBudget = currentTAP?.estimatedBudget || 150000;
   const totalActualCost = projectCosts.actual + phasesCosts.actual;
-  const totalEstimatedCost = projectCosts.estimated + phasesCosts.estimated;
   const budgetUsed = (totalActualCost / projectBudget) * 100;
   const remainingBudget = projectBudget - totalActualCost;
+
+  // Função para determinar status do orçamento
+  const getBudgetStatus = () => {
+    if (budgetUsed > 100) return { status: 'Acima do Orçamento', color: 'text-red-600', bgColor: 'bg-red-100' };
+    if (budgetUsed > 80) return { status: 'Atenção', color: 'text-yellow-600', bgColor: 'bg-yellow-100' };
+    return { status: 'Dentro do Orçamento', color: 'text-green-600', bgColor: 'bg-green-100' };
+  };
+
+  const budgetStatus = getBudgetStatus();
+
+  // Calcular níveis hierárquicos da EAP
+  const eapLevels = wbsItems.length > 0 ? Math.max(...wbsItems.map(item => item.code.split('.').length)) : 0;
+
+  // Calcular prazo final estimado
+  const getProjectEndDate = () => {
+    if (phases.length === 0) return 'Não definido';
+    const endDates = phases.map(p => new Date(p.endDate));
+    const projectEnd = new Date(Math.max(...endDates.map(d => d.getTime())));
+    return projectEnd.toLocaleDateString('pt-BR');
+  };
+
+  // Determinar próximos passos
+  const getNextSteps = () => {
+    if (tapCompletenessPercentage < 50) {
+      return {
+        title: 'Complete o TAP primeiro',
+        description: 'Preencha as informações básicas do projeto no Termo de Abertura',
+        action: 'Ir para TAP',
+        link: '/tap',
+        icon: FileText,
+        priority: 'high'
+      };
+    }
+    if (wbsItems.length === 0) {
+      return {
+        title: 'Organize o trabalho na EAP',
+        description: 'Defina os pacotes de trabalho na Estrutura Analítica do Projeto',
+        action: 'Criar EAP',
+        link: '/eap',
+        icon: Target,
+        priority: 'medium'
+      };
+    }
+    if (tasks.length === 0) {
+      return {
+        title: 'Crie tarefas para execução',
+        description: 'Transforme os pacotes de trabalho em tarefas executáveis',
+        action: 'Gerenciar Tarefas',
+        link: '/tarefas',
+        icon: CheckCircle,
+        priority: 'medium'
+      };
+    }
+    return {
+      title: 'Acompanhe o progresso',
+      description: 'Monitore o andamento das tarefas e entregas do projeto',
+      action: 'Ver Cronograma',
+      link: '/cronograma',
+      icon: Activity,
+      priority: 'low'
+    };
+  };
+
+  const nextSteps = getNextSteps();
 
   // Preparar dados para gráficos (apenas se houver dados)
   const CHART_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8834D8', '#82CA9D'];
@@ -64,6 +144,14 @@ const Index = () => {
       actual: item.actualCost
     }));
 
+  const progressByWBS = wbsItems
+    .filter(item => item.estimatedHours > 0)
+    .map(item => ({
+      name: item.code,
+      progress: item.actualHours > 0 ? Math.round((item.actualHours / item.estimatedHours) * 100) : 0,
+      activity: item.activity.substring(0, 30) + (item.activity.length > 30 ? '...' : '')
+    }));
+
   const budgetData = [{
     name: 'Orçamento',
     'Orçamento Total': projectBudget,
@@ -72,16 +160,54 @@ const Index = () => {
   }];
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Dashboard do Projeto</h1>
-        <Link to="/tap">
-          <Button variant="outline">
-            <FileText className="h-4 w-4 mr-2" />
-            {currentTAP ? 'Ver TAP' : 'Criar TAP'}
+    <div className="container mx-auto p-4 md:p-6 space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <h1 className="text-2xl md:text-3xl font-bold">Dashboard do Projeto</h1>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Projeto
           </Button>
-        </Link>
+          <Button variant="outline" size="sm">
+            <Copy className="h-4 w-4 mr-2" />
+            Backup
+          </Button>
+          <Button variant="outline" size="sm">
+            <Download className="h-4 w-4 mr-2" />
+            Exportar
+          </Button>
+        </div>
       </div>
+
+      {/* Guia de Uso */}
+      <Card className="border-blue-200 bg-blue-50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-blue-800">
+            <Lightbulb className="h-5 w-5" />
+            💡 Como usar este sistema
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">1</span>
+              <span>Comece criando o TAP (Termo de Abertura)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">2</span>
+              <span>Defina o escopo detalhado</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">3</span>
+              <span>Organize o trabalho na EAP</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">4</span>
+              <span>Acompanhe o progresso aqui</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Status do TAP */}
       <Card className={`border-2 ${isTAPComplete ? 'border-green-200 bg-green-50' : 'border-orange-200 bg-orange-50'}`}>
@@ -97,17 +223,18 @@ const Index = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <p className="text-sm text-muted-foreground">Status</p>
               <p className={`font-semibold ${isTAPComplete ? 'text-green-700' : 'text-orange-700'}`}>
-                {isTAPComplete ? 'TAP Completo' : 'TAP Incompleto'}
+                {tapCompletenessPercentage}% Completo
               </p>
+              <Progress value={tapCompletenessPercentage} className="mt-1" />
             </div>
             {currentTAP && (
               <>
                 <div>
-                  <p className="text-sm text-muted-foreground">Projeto</p>
+                  <p className="text-sm text-muted-foreground">Nome do Projeto</p>
                   <p className="font-semibold">{currentTAP.projectName || 'Não definido'}</p>
                 </div>
                 <div>
@@ -116,8 +243,25 @@ const Index = () => {
                     R$ {projectBudget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Prazo Final</p>
+                  <p className="font-semibold">
+                    {currentTAP.estimatedEndDate ? 
+                      new Date(currentTAP.estimatedEndDate).toLocaleDateString('pt-BR') : 
+                      'Não definido'
+                    }
+                  </p>
+                </div>
               </>
             )}
+          </div>
+          <div className="mt-4">
+            <Link to="/tap">
+              <Button size="sm">
+                {currentTAP ? 'Ver TAP' : 'Criar TAP'}
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </Link>
           </div>
         </CardContent>
       </Card>
@@ -126,29 +270,28 @@ const Index = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Fases do Projeto</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Status Geral</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{phases.length}</div>
-            <p className="text-xs text-muted-foreground">Fases planejadas</p>
-            <Link to="/fases">
-              <Button variant="link" size="sm" className="p-0 h-auto">Ver fases</Button>
-            </Link>
+            <div className="text-2xl font-bold">{overallProgress}%</div>
+            <p className="text-xs text-muted-foreground">Progresso geral do projeto</p>
+            <Progress value={overallProgress} className="mt-2" />
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Progresso das Tarefas</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Cronograma</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{completedTasks}/{totalTasks}</div>
-            <p className="text-xs text-muted-foreground">{completionRate.toFixed(1)}% concluídas</p>
-            <Progress value={completionRate} className="mt-2" />
-            <Link to="/tarefas">
-              <Button variant="link" size="sm" className="p-0 h-auto">Ver tarefas</Button>
+            <div className="text-2xl font-bold">{phases.length}</div>
+            <p className="text-xs text-muted-foreground">
+              Planejamento temporal • Fim: {getProjectEndDate()}
+            </p>
+            <Link to="/cronograma">
+              <Button variant="link" size="sm" className="p-0 h-auto mt-2">Ver cronograma</Button>
             </Link>
           </CardContent>
         </Card>
@@ -159,11 +302,16 @@ const Index = () => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{budgetUsed.toFixed(1)}%</div>
+            <div className="flex items-center gap-2">
+              <div className="text-2xl font-bold">{budgetUsed.toFixed(1)}%</div>
+              <div className={`px-2 py-1 rounded-full text-xs ${budgetStatus.bgColor} ${budgetStatus.color}`}>
+                {budgetStatus.status}
+              </div>
+            </div>
             <p className="text-xs text-muted-foreground">
               R$ {totalActualCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} de R$ {projectBudget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </p>
-            <Progress value={budgetUsed} className="mt-2" />
+            <Progress value={Math.min(budgetUsed, 100)} className="mt-2" />
             <Link to="/custos">
               <Button variant="link" size="sm" className="p-0 h-auto">Ver custos</Button>
             </Link>
@@ -172,22 +320,52 @@ const Index = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Itens EAP</CardTitle>
+            <CardTitle className="text-sm font-medium">Pacotes de Trabalho</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{wbsItems.length}</div>
-            <p className="text-xs text-muted-foreground">Pacotes de trabalho</p>
+            <p className="text-xs text-muted-foreground">
+              EAP com {eapLevels} {eapLevels === 1 ? 'nível' : 'níveis'} hierárquicos
+            </p>
             <Link to="/eap">
-              <Button variant="link" size="sm" className="p-0 h-auto">Ver EAP</Button>
+              <Button variant="link" size="sm" className="p-0 h-auto mt-2">Ver EAP</Button>
             </Link>
           </CardContent>
         </Card>
       </div>
 
-      {/* Gestão de Escopo */}
+      {/* Próximos Passos */}
+      <Card className={`border-2 ${
+        nextSteps.priority === 'high' ? 'border-red-200 bg-red-50' :
+        nextSteps.priority === 'medium' ? 'border-yellow-200 bg-yellow-50' :
+        'border-green-200 bg-green-50'
+      }`}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <nextSteps.icon className="h-5 w-5" />
+            Próximos Passos
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h3 className="font-semibold text-lg">{nextSteps.title}</h3>
+              <p className="text-muted-foreground">{nextSteps.description}</p>
+            </div>
+            <Link to={nextSteps.link}>
+              <Button>
+                {nextSteps.action}
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Documentação do Projeto */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Gestão de Escopo (PMBOK)</h2>
+        <h2 className="text-xl font-semibold">Documentação do Projeto</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
@@ -197,7 +375,9 @@ const Index = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{approvedRequirements}/{totalRequirements}</div>
-              <p className="text-xs text-muted-foreground">{requirementsApprovalRate.toFixed(1)}% aprovados</p>
+              <p className="text-xs text-muted-foreground">
+                O que o projeto deve atender • {requirementsApprovalRate.toFixed(1)}% aprovados
+              </p>
               <Progress value={requirementsApprovalRate} className="mt-2" />
               <Link to="/requisitos">
                 <Button variant="link" size="sm" className="p-0 h-auto mt-2">Gerenciar</Button>
@@ -213,7 +393,7 @@ const Index = () => {
             <CardContent>
               <div className="text-2xl font-bold">{scopeStatement.length > 0 ? '1' : '0'}</div>
               <p className="text-xs text-muted-foreground">
-                {scopeStatement.length > 0 ? 'Definida' : 'Não definida'}
+                Definição clara do trabalho • {scopeStatement.length > 0 ? 'Definida' : 'Não definida'}
               </p>
               <Link to="/escopo">
                 <Button variant="link" size="sm" className="p-0 h-auto mt-2">
@@ -225,12 +405,14 @@ const Index = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Validações</CardTitle>
+              <CardTitle className="text-sm font-medium">Aprovações</CardTitle>
               <Shield className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{approvedValidations}/{totalValidations}</div>
-              <p className="text-xs text-muted-foreground">Entregas validadas</p>
+              <p className="text-xs text-muted-foreground">
+                Aprovações e entregas validadas
+              </p>
               <Link to="/validacao">
                 <Button variant="link" size="sm" className="p-0 h-auto mt-2">Gerenciar</Button>
               </Link>
@@ -239,16 +421,41 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Análise de Custos */}
-      {(costByWBS.length > 0 || totalActualCost > 0) && (
+      {/* Análise Visual - só mostrar se houver dados */}
+      {(costByWBS.length > 0 || progressByWBS.length > 0 || totalActualCost > 0) && (
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Análise Financeira</h2>
+          <h2 className="text-xl font-semibold">Análise Visual</h2>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {costByWBS.length > 0 && (
+            {progressByWBS.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Custos por Item EAP</CardTitle>
+                  <CardTitle>Progresso por Pacote de Trabalho</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={progressByWBS}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip 
+                        formatter={(value) => [`${value}%`, 'Progresso']}
+                        labelFormatter={(label) => {
+                          const item = progressByWBS.find(p => p.name === label);
+                          return item ? item.activity : label;
+                        }}
+                      />
+                      <Bar dataKey="progress" fill="#0088FE" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+
+            {costByWBS.length > 0 ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Custos por Pacote de Trabalho</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
@@ -272,27 +479,27 @@ const Index = () => {
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Status do Orçamento</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={budgetData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip formatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
+                      <Legend />
+                      <Bar dataKey="Orçamento Total" fill="#8884d8" />
+                      <Bar dataKey="Custo Real" fill="#82ca9d" />
+                      <Bar dataKey="Disponível" fill="#ffc658" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
             )}
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Status do Orçamento</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={budgetData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip formatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
-                    <Legend />
-                    <Bar dataKey="Orçamento Total" fill="#8884d8" />
-                    <Bar dataKey="Custo Real" fill="#82ca9d" />
-                    <Bar dataKey="Disponível" fill="#ffc658" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
           </div>
         </div>
       )}
@@ -313,20 +520,20 @@ const Index = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <p className="text-sm text-muted-foreground">Status Orçamentário</p>
-              <p className={`text-lg font-semibold ${budgetUsed > 100 ? 'text-red-600' : budgetUsed > 80 ? 'text-yellow-600' : 'text-green-600'}`}>
-                {budgetUsed > 100 ? 'Acima do Orçamento' : budgetUsed > 80 ? 'Atenção' : 'Dentro do Orçamento'}
+              <p className={`text-lg font-semibold ${budgetStatus.color}`}>
+                {budgetStatus.status}
               </p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Valor Disponível</p>
+              <p className="text-sm text-muted-foreground">Saldo Disponível</p>
               <p className="text-lg font-semibold">
                 R$ {remainingBudget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Progresso vs Custo</p>
+              <p className="text-sm text-muted-foreground">Eficiência</p>
               <p className={`text-lg font-semibold ${completionRate > budgetUsed ? 'text-green-600' : 'text-orange-600'}`}>
-                {completionRate > budgetUsed ? 'Eficiente' : 'Revisar'}
+                {completionRate > budgetUsed ? 'Eficiente' : 'Revisar Custos'}
               </p>
             </div>
           </div>
