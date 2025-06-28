@@ -58,16 +58,29 @@ const AdvancedSchedule = () => {
       const phaseEndDate = new Date(phase.endDate);
       const phaseDuration = Math.ceil((phaseEndDate.getTime() - phaseStartDate.getTime()) / (1000 * 60 * 60 * 24));
 
+      // Determinar status da fase baseado nas datas e progresso
+      let phaseStatus: 'nao-iniciado' | 'em-andamento' | 'concluido' | 'atrasado' = 'nao-iniciado';
+      const today = new Date();
+      const progress = getPhaseProgress(phase.id);
+      
+      if (phase.status === 'concluido') {
+        phaseStatus = 'concluido';
+      } else if (phaseEndDate < today && progress < 100) {
+        phaseStatus = 'atrasado';
+      } else if (progress > 0) {
+        phaseStatus = 'em-andamento';
+      }
+
       ganttTasks.push({
         id: `phase-${phase.id}`,
         name: phase.name,
         startDate: phase.startDate,
         endDate: phase.endDate,
         duration: phaseDuration,
-        progress: getPhaseProgress(phase.id),
+        progress: progress,
         dependencies: phaseIndex > 0 ? [`phase-${phases[phaseIndex - 1].id}`] : [],
         resources: [phase.responsible],
-        status: phase.status as any,
+        status: phaseStatus,
         milestone: false,
         critical: isOnCriticalPath(phase.id),
         level: 0
@@ -82,17 +95,29 @@ const AdvancedSchedule = () => {
         const itemEndDate = new Date(itemStartDate);
         itemEndDate.setDate(itemEndDate.getDate() + Math.ceil(item.estimatedHours / 8));
 
+        // Determinar status do item WBS
+        let itemStatus: 'nao-iniciado' | 'em-andamento' | 'concluido' | 'atrasado' = 'nao-iniciado';
+        const itemProgress = Math.round((item.actualHours / item.estimatedHours) * 100) || 0;
+        
+        if (itemProgress >= 100) {
+          itemStatus = 'concluido';
+        } else if (itemEndDate < today && itemProgress < 100) {
+          itemStatus = 'atrasado';
+        } else if (item.actualHours > 0) {
+          itemStatus = 'em-andamento';
+        }
+
         ganttTasks.push({
           id: `wbs-${item.id}`,
           name: `${item.code} - ${item.activity}`,
           startDate: itemStartDate.toISOString().split('T')[0],
           endDate: itemEndDate.toISOString().split('T')[0],
           duration: Math.ceil(item.estimatedHours / 8),
-          progress: Math.round((item.actualHours / item.estimatedHours) * 100) || 0,
+          progress: itemProgress,
           parentId: `phase-${phase.id}`,
           dependencies: itemIndex > 0 ? [`wbs-${phaseWBSItems[itemIndex - 1].id}`] : [],
           resources: [item.responsible],
-          status: item.actualHours > 0 ? 'em-andamento' : 'nao-iniciado',
+          status: itemStatus,
           milestone: false,
           critical: isOnCriticalPath(item.id),
           level: 1
@@ -110,7 +135,7 @@ const AdvancedSchedule = () => {
         parentId: `phase-${phase.id}`,
         dependencies: phaseWBSItems.map(item => `wbs-${item.id}`),
         resources: [],
-        status: phase.status as any,
+        status: phase.status === 'concluido' ? 'concluido' : 'nao-iniciado',
         milestone: true,
         critical: true,
         level: 1
@@ -133,12 +158,13 @@ const AdvancedSchedule = () => {
 
   const isOnCriticalPath = (id: string) => {
     // Lógica simplificada para identificar caminho crítico
-    // Em uma implementação real, seria necessário um algoritmo mais complexo
     const phase = phases.find(p => p.id === id);
     const wbsItem = wbsItems.find(item => item.id === id);
+    const today = new Date();
     
     if (phase) {
-      return phase.status === 'atrasado' || new Date(phase.endDate) < new Date();
+      // Fase é crítica se está atrasada ou tem deadline apertado
+      return new Date(phase.endDate) < today || phase.status === 'pausado';
     }
     
     if (wbsItem) {
@@ -273,7 +299,7 @@ const AdvancedSchedule = () => {
                       <SelectValue placeholder="Selecione uma tarefa pai (opcional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nenhuma (Tarefa raiz)</SelectItem>
+                      <SelectItem value="none">Nenhuma (Tarefa raiz)</SelectItem>
                       {tasks.filter(t => t.level === 0).map((task) => (
                         <SelectItem key={task.id} value={task.id}>
                           {task.name}
