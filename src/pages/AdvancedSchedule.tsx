@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useProject } from '@/contexts/ProjectContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -218,7 +217,7 @@ const AdvancedSchedule = () => {
 
       // Verificar baseline ativo
       if (activeProject) {
-        const baseline = BaselineManager.getActiveBaseline(activeProject.id);
+        const baseline = BaselineManager.getActiveBaseline(activeProject.id.toString());
         setActiveBaseline(baseline);
 
         if (baseline) {
@@ -260,7 +259,7 @@ const AdvancedSchedule = () => {
     const totalBudget = tasks.reduce((sum, task) => sum + (task.cost || 0), 0);
     
     BaselineManager.saveBaseline(
-      activeProject.id,
+      activeProject.id.toString(),
       `Baseline ${new Date().toLocaleDateString('pt-BR')}`,
       'Baseline criado automaticamente',
       tasks,
@@ -271,7 +270,7 @@ const AdvancedSchedule = () => {
     toast.success('Baseline salvo com sucesso!');
     
     // Recarregar baseline
-    const newBaseline = BaselineManager.getActiveBaseline(activeProject.id);
+    const newBaseline = BaselineManager.getActiveBaseline(activeProject.id.toString());
     setActiveBaseline(newBaseline);
   };
 
