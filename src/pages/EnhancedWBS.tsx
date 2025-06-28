@@ -81,7 +81,7 @@ const EnhancedWBS = () => {
           <h1 className="text-3xl font-bold">Estrutura Analítica do Projeto (EAP)</h1>
           <div className="flex items-center gap-2 text-muted-foreground">
             <Info className="h-4 w-4" />
-            <span>Organize seu projeto em partes menores e mais fáceis de gerenciar</span>
+            <span>A EAP organiza seu projeto em pacotes de trabalho hierárquicos para facilitar o gerenciamento</span>
           </div>
         </div>
         <div className="flex gap-2">
@@ -159,136 +159,147 @@ const EnhancedWBS = () => {
       </div>
 
       {/* WBS Structure */}
-      {phases.map((phase) => {
-        const phaseItems = getWBSItemsByPhase(phase.id);
-        const isExpanded = expandedPhases.includes(phase.id);
-        
-        return (
-          <Card key={phase.id} className="bg-white border border-gray-200 shadow-sm">
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => togglePhase(phase.id)}
-                    className="p-1"
+      {phases.length > 0 ? (
+        phases.map((phase) => {
+          const phaseItems = getWBSItemsByPhase(phase.id);
+          const isExpanded = expandedPhases.includes(phase.id);
+          
+          return (
+            <Card key={phase.id} className="bg-white border border-gray-200 shadow-sm">
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => togglePhase(phase.id)}
+                      className="p-1"
+                    >
+                      {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    </Button>
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <span className="text-lg">📦</span>
+                        {phase.name}
+                        <Badge variant="outline" className="text-xs">
+                          {phaseItems.length} itens
+                        </Badge>
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {phase.description}
+                      </p>
+                    </div>
+                  </div>
+                  <Badge 
+                    variant={phase.status === 'em-andamento' ? 'default' : 'secondary'}
+                    className={phase.status === 'em-andamento' ? 'bg-green-100 text-green-800' : ''}
                   >
-                    {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                  </Button>
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <span className="text-lg">📦</span>
-                      {phase.name}
-                      <Badge variant="outline" className="text-xs">
-                        {phaseItems.length} itens
-                      </Badge>
-                    </CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {phase.description}
-                    </p>
-                  </div>
+                    {phase.status.replace('-', ' ')}
+                  </Badge>
                 </div>
-                <Badge 
-                  variant={phase.status === 'em-andamento' ? 'default' : 'secondary'}
-                  className={phase.status === 'em-andamento' ? 'bg-green-100 text-green-800' : ''}
-                >
-                  {phase.status.replace('-', ' ')}
-                </Badge>
-              </div>
-            </CardHeader>
-            
-            {isExpanded && (
-              <CardContent>
-                {phaseItems.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <div className="text-4xl mb-2">📋</div>
-                    <p>Nenhum item EAP criado para esta entrega</p>
-                    <p className="text-sm mt-2">Comece adicionando o primeiro item</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {phaseItems.map((item) => {
-                      const typeInfo = getItemTypeInfo(item.itemType || 'pacote-trabalho');
-                      
-                      return (
-                        <Card key={item.id} className="border border-gray-100 bg-gray-50">
-                          <CardContent className="p-4">
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-2">
-                                  <WBSItemTooltip content={typeInfo.tooltip}>
-                                    <span className="text-lg cursor-help">{typeInfo.icon}</span>
-                                  </WBSItemTooltip>
-                                  <span className="font-mono text-sm bg-muted px-2 py-1 rounded">
-                                    {item.code}
-                                  </span>
-                                  <h3 className="font-semibold">{item.activity}</h3>
-                                  <Badge variant="outline" className="text-xs">
-                                    {typeInfo.label}
-                                  </Badge>
+              </CardHeader>
+              
+              {isExpanded && (
+                <CardContent>
+                  {phaseItems.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <div className="text-4xl mb-2">📋</div>
+                      <p>Nenhum item EAP criado para esta entrega</p>
+                      <p className="text-sm mt-2">Comece adicionando o primeiro item</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {phaseItems.map((item) => {
+                        const typeInfo = getItemTypeInfo(item.itemType || 'pacote-trabalho');
+                        
+                        return (
+                          <Card key={item.id} className="border border-gray-100 bg-gray-50">
+                            <CardContent className="p-4">
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <WBSItemTooltip content={typeInfo.tooltip}>
+                                      <span className="text-lg cursor-help">{typeInfo.icon}</span>
+                                    </WBSItemTooltip>
+                                    <span className="font-mono text-sm bg-muted px-2 py-1 rounded">
+                                      {item.code}
+                                    </span>
+                                    <h3 className="font-semibold">{item.activity}</h3>
+                                    <Badge variant="outline" className="text-xs">
+                                      {typeInfo.label}
+                                    </Badge>
+                                  </div>
+                                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                    <span>👤 {item.responsible}</span>
+                                    <span>⏱️ {item.estimatedHours}h</span>
+                                    <span>💰 R$ {(item.estimatedHours * item.hourlyRate).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                  </div>
+                                  {item.description && (
+                                    <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                                      {item.description}
+                                    </p>
+                                  )}
                                 </div>
-                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                  <span>👤 {item.responsible}</span>
-                                  <span>⏱️ {item.estimatedHours}h</span>
-                                  <span>💰 R$ {(item.estimatedHours * item.hourlyRate).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                <div className="flex items-center gap-2 ml-4">
+                                  <Button variant="outline" size="sm">
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <EnhancedWBSDialog
+                                    trigger={
+                                      <Button variant="outline" size="sm">
+                                        <Edit className="h-4 w-4" />
+                                      </Button>
+                                    }
+                                    wbsItem={item}
+                                  />
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button variant="outline" size="sm" className="text-red-600 hover:text-red-800">
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Excluir Item EAP</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Tem certeza que deseja excluir o item "{item.code} - {item.activity}"? 
+                                          Esta ação não pode ser desfeita e pode afetar outros itens dependentes.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction 
+                                          onClick={() => handleDeleteWBSItem(item.id)}
+                                          className="bg-red-600 hover:bg-red-700"
+                                        >
+                                          Excluir
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
                                 </div>
-                                {item.description && (
-                                  <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                                    {item.description}
-                                  </p>
-                                )}
                               </div>
-                              <div className="flex items-center gap-2 ml-4">
-                                <Button variant="outline" size="sm">
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                <EnhancedWBSDialog
-                                  trigger={
-                                    <Button variant="outline" size="sm">
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                  }
-                                  wbsItem={item}
-                                />
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button variant="outline" size="sm" className="text-red-600 hover:text-red-800">
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Excluir Item EAP</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Tem certeza que deseja excluir o item "{item.code} - {item.activity}"? 
-                                        Esta ação não pode ser desfeita e pode afetar outros itens dependentes.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                      <AlertDialogAction 
-                                        onClick={() => handleDeleteWBSItem(item.id)}
-                                        className="bg-red-600 hover:bg-red-700"
-                                      >
-                                        Excluir
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            )}
-          </Card>
-        );
-      })}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              )}
+            </Card>
+          );
+        })
+      ) : (
+        /* Empty state when no phases exist */
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">📋</div>
+          <p className="text-muted-foreground mb-4">Nenhum item da EAP criado ainda</p>
+          <p className="text-sm text-muted-foreground mb-6">
+            Organize seu projeto em pacotes de trabalho hierárquicos
+          </p>
+        </div>
+      )}
 
       {/* Export Actions */}
       <Card>
@@ -331,19 +342,6 @@ const EnhancedWBS = () => {
           </div>
         </AlertDescription>
       </Alert>
-
-      {phases.length === 0 && (
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">📋</div>
-          <p className="text-muted-foreground mb-4">Nenhuma fase criada ainda</p>
-          <p className="text-sm text-muted-foreground mb-4">
-            Crie pelo menos uma fase antes de adicionar itens EAP
-          </p>
-          <Button variant="outline">
-            Ir para Fases
-          </Button>
-        </div>
-      )}
     </div>
   );
 };

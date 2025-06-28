@@ -140,18 +140,21 @@ const EnhancedWBSDialog = ({ trigger, wbsItem }: EnhancedWBSDialogProps) => {
             
             <div>
               <Label className="flex items-center gap-2">
-                Fase
-                <WBSItemTooltip content="Em qual fase do projeto este item se encaixa">
+                Item Pai
+                <WBSItemTooltip content="Selecione o item superior na hierarquia">
                   <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                 </WBSItemTooltip>
               </Label>
               <select
                 className="w-full p-2 border rounded-md"
-                value={formData.phaseId}
-                onChange={(e) => setFormData({ ...formData, phaseId: e.target.value })}
+                value={formData.parentId}
+                onChange={(e) => setFormData({ ...formData, parentId: e.target.value })}
               >
-                {phases.map(phase => (
-                  <option key={phase.id} value={phase.id}>{phase.name}</option>
+                <option value="">Raiz (Nível 1)</option>
+                {wbsItems.map(item => (
+                  <option key={item.id} value={item.id}>
+                    {item.code} - {item.activity}
+                  </option>
                 ))}
               </select>
             </div>
@@ -192,7 +195,7 @@ const EnhancedWBSDialog = ({ trigger, wbsItem }: EnhancedWBSDialogProps) => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label className="flex items-center gap-2">
-                Nome
+                Nome do Pacote
                 <WBSItemTooltip content="Nome claro e descritivo do item">
                   <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                 </WBSItemTooltip>
