@@ -44,7 +44,6 @@ export default function Layout() {
     if (activeProject) {
       switch (currentView) {
         case 'project-dashboard':
-        case 'dashboard-projeto':
           return <InternalProjectDashboard />;
         case 'tap':
           return <ProjectCharter />;

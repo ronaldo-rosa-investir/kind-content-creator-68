@@ -62,7 +62,7 @@ const projectNavSections = [
   {
     title: "Dashboard do Projeto",
     icon: BarChart3,
-    view: "dashboard-projeto",
+    view: "project-dashboard",
     items: []
   },
   {
