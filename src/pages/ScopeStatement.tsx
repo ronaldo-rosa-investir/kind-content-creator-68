@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useProject } from '@/contexts/ProjectContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -385,7 +384,7 @@ const ScopeStatement = () => {
                     <div className="flex-1">
                       <div className="text-sm font-medium">{constraint.type}</div>
                       <div className="text-xs text-muted-foreground">{constraint.description}</div>
-                      <Badge size="sm" variant={constraint.impact === 'alto' ? 'destructive' : constraint.impact === 'medio' ? 'default' : 'secondary'}>
+                      <Badge variant={constraint.impact === 'alto' ? 'destructive' : constraint.impact === 'medio' ? 'default' : 'secondary'}>
                         {constraint.impact}
                       </Badge>
                     </div>
@@ -471,7 +470,7 @@ const ScopeStatement = () => {
                     <div className="flex-1">
                       <div className="text-sm font-medium">{exclusion.item}</div>
                       <div className="text-xs text-muted-foreground">{exclusion.justification}</div>
-                      <Badge size="sm" variant={exclusion.communicated === 'sim' ? 'default' : 'destructive'}>
+                      <Badge variant={exclusion.communicated === 'sim' ? 'default' : 'destructive'}>
                         Cliente {exclusion.communicated === 'sim' ? 'Comunicado' : 'Não Comunicado'}
                       </Badge>
                     </div>
