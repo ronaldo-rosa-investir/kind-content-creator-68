@@ -187,7 +187,7 @@ const AdvancedSchedule = () => {
     try {
       // Cálculo do Caminho Crítico (CPM)
       const cpmResults = CPMCalculator.calculateCriticalPath(tasks);
-      setCmpResult(cmpResults);
+      setCpmResult(cpmResults);
 
       // Atualizar tarefas com informação do caminho crítico
       const updatedTasks = tasks.map(task => ({
@@ -275,7 +275,7 @@ const AdvancedSchedule = () => {
     setActiveBaseline(newBaseline);
   };
 
-  const criticalPath = cmpResult?.criticalPath || [];
+  const criticalPath = cpmResult?.criticalPath || [];
 
   return (
     <div className="space-y-6">
@@ -380,7 +380,7 @@ const AdvancedSchedule = () => {
         </TabsContent>
 
         <TabsContent value="critical" className="space-y-4">
-          {cmpResult ? (
+          {cpmResult ? (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-red-700">
@@ -391,23 +391,23 @@ const AdvancedSchedule = () => {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-red-600">{cmpResult.criticalPath.length}</div>
+                    <div className="text-3xl font-bold text-red-600">{cpmResult.criticalPath.length}</div>
                     <p className="text-sm text-muted-foreground">Tarefas Críticas</p>
                   </div>
                   <div className="text-center">
-                    <div className="text-3xl font-bold">{cmpResult.totalProjectDuration}</div>
+                    <div className="text-3xl font-bold">{cpmResult.totalProjectDuration}</div>
                     <p className="text-sm text-muted-foreground">Duração Total (dias)</p>
                   </div>
                   <div className="text-center">
                     <div className="text-3xl font-bold text-green-600">
-                      {Object.values(cmpResult.float).filter((f: any) => f > 0).length}
+                      {Object.values(cpmResult.float).filter((f: any) => f > 0).length}
                     </div>
                     <p className="text-sm text-muted-foreground">Tarefas com Folga</p>
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  {tasks.filter(task => cmpResult.criticalPath.includes(task.id)).map((task) => (
+                  {tasks.filter(task => cpmResult.criticalPath.includes(task.id)).map((task) => (
                     <div key={task.id} className="p-3 bg-red-50 rounded-lg border-l-4 border-red-500">
                       <div className="flex justify-between items-center">
                         <div>
@@ -417,7 +417,7 @@ const AdvancedSchedule = () => {
                           </p>
                         </div>
                         <div className="text-right">
-                          <div className="text-sm text-red-800">Folga: {cmpResult.float[task.id] || 0} dias</div>
+                          <div className="text-sm text-red-800">Folga: {cpmResult.float[task.id] || 0} dias</div>
                           <Badge variant="destructive">Crítico</Badge>
                         </div>
                       </div>
