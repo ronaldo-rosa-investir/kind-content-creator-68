@@ -1,12 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,18 +24,28 @@ import { WBSHierarchyManager } from '@/utils/wbsHierarchyUtils';
 import { WBS_ITEM_TYPES } from '@/types/wbs';
 import { HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { WBSItemHierarchy } from '@/types/wbs';
 
 interface WBSItemDialogProps {
   trigger: React.ReactNode;
-  wbsItem?: any;
+  wbsItem?: WBSItemHierarchy;
+  parentItem?: WBSItemHierarchy | null;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export const WBSItemDialog = ({ trigger, wbsItem }: WBSItemDialogProps) => {
-  const { addWBSItem, updateWBSItem, wbsItems } = useProject();
+export const WBSItemDialog = ({ 
+  trigger, 
+  wbsItem, 
+  parentItem, 
+  isOpen = false, 
+  onOpenChange 
+}: WBSItemDialogProps) => {
+  const { addWBSItem, updateWBSItem, wbsItems, projectCharter } = useProject();
   const { toast } = useToast();
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [formData, setFormData] = useState({
-    parentId: wbsItem?.parentId || 'root',
+    parentId: wbsItem?.parentId || parentItem?.id || 'root',
     activity: wbsItem?.activity || '',
     itemType: wbsItem?.itemType || 'componente',
     responsible: wbsItem?.responsible || '',
@@ -45,16 +54,45 @@ export const WBSItemDialog = ({ trigger, wbsItem }: WBSItemDialogProps) => {
     notes: wbsItem?.notes || ''
   });
 
+  // Control dialog state
+  const dialogOpen = onOpenChange ? isOpen : internalOpen;
+  const setDialogOpen = onOpenChange || setInternalOpen;
+
+  // Get project name
+  const projectName = projectCharter.length > 0 ? projectCharter[0].projectName : 'Projeto';
+
+  // Reset form when dialog opens/closes or item changes
+  useEffect(() => {
+    if (dialogOpen) {
+      setFormData({
+        parentId: wbsItem?.parentId || parentItem?.id || 'root',
+        activity: wbsItem?.activity || '',
+        itemType: wbsItem?.itemType || 'componente',
+        responsible: wbsItem?.responsible || '',
+        estimatedCost: wbsItem?.estimatedCost || 0,
+        description: wbsItem?.description || '',
+        notes: wbsItem?.notes || ''
+      });
+    }
+  }, [dialogOpen, wbsItem, parentItem]);
+
   const generateCode = () => {
     const actualParentId = formData.parentId === 'root' ? null : formData.parentId;
     return WBSHierarchyManager.generateNextCode(actualParentId, wbsItems);
   };
 
   const getAvailableParents = () => {
-    const parents = [{ id: 'root', label: 'Raiz (Nível 1)' }];
+    const parents = [{ id: 'root', label: `Raiz - ${projectName}` }];
     
     wbsItems
       .filter(item => wbsItem ? item.id !== wbsItem.id : true)
+      .filter(item => {
+        // Prevent circular references
+        if (wbsItem && WBSHierarchyManager.hasCircularReference(item.id, wbsItem.id, wbsItems)) {
+          return false;
+        }
+        return true;
+      })
       .forEach(item => {
         parents.push({
           id: item.id,
@@ -68,7 +106,7 @@ export const WBSItemDialog = ({ trigger, wbsItem }: WBSItemDialogProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validações
+    // Validations
     if (!formData.activity.trim()) {
       toast({
         title: "Erro de validação",
@@ -96,7 +134,7 @@ export const WBSItemDialog = ({ trigger, wbsItem }: WBSItemDialogProps) => {
       return;
     }
 
-    // Verificar referência circular
+    // Check circular reference
     const actualParentId = formData.parentId === 'root' ? null : formData.parentId;
     
     if (actualParentId && wbsItem && 
@@ -143,14 +181,12 @@ export const WBSItemDialog = ({ trigger, wbsItem }: WBSItemDialogProps) => {
       });
     }
     
-    setIsOpen(false);
+    setDialogOpen(false);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        {trigger}
-      </DialogTrigger>
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      {trigger}
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -170,7 +206,7 @@ export const WBSItemDialog = ({ trigger, wbsItem }: WBSItemDialogProps) => {
             </TooltipProvider>
           </DialogTitle>
           <DialogDescription>
-            Organize seu projeto em uma estrutura hierárquica de trabalho
+            {wbsItem ? 'Edite as informações do item EAP' : 'Crie um novo item na estrutura analítica do projeto'}
           </DialogDescription>
         </DialogHeader>
         
@@ -181,7 +217,7 @@ export const WBSItemDialog = ({ trigger, wbsItem }: WBSItemDialogProps) => {
               value={wbsItem ? wbsItem.code : generateCode()}
               readOnly={true}
               disabled={true}
-              className="bg-gray-100"
+              className="bg-gray-100 font-mono"
             />
           </div>
 
@@ -276,7 +312,7 @@ export const WBSItemDialog = ({ trigger, wbsItem }: WBSItemDialogProps) => {
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
               Cancelar
             </Button>
             <Button type="submit">
