@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useProject } from '@/contexts/ProjectContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,13 +12,21 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Plus, Trash2, FileText, Edit, Users, Calendar, CheckCircle, Printer, Mail, Download, AlertTriangle, Clock, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { TeamMemberBasic, SponsorSignature, TAPStatus, TAPApproval } from '@/types/project';
+import { TeamMemberBasic, SponsorSignature, TAPStatus, TAPApproval, TAPApprovalHistory } from '@/types/project';
+
+// Import new components
+import TAPHeader from '@/components/ProjectCharter/TAPHeader';
+import BudgetTab from '@/components/ProjectCharter/BudgetTab';
+import AutoSave from '@/components/ProjectCharter/AutoSave';
+import VersionHistory from '@/components/ProjectCharter/VersionHistory';
+import CharacterCounter from '@/components/ProjectCharter/CharacterCounter';
 
 const ProjectCharter = () => {
   const { projectCharter, addProjectCharter, updateProjectCharter } = useProject();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [acceptedConditions, setAcceptedConditions] = useState(false);
+  const [currentVersion, setCurrentVersion] = useState('1.0');
   
   const [formData, setFormData] = useState({
     projectName: '',
@@ -50,7 +58,43 @@ const ProjectCharter = () => {
     signatures: false
   });
 
-  React.useEffect(() => {
+  // Orçamento breakdown state
+  const [budgetCategories, setBudgetCategories] = useState([]);
+
+  // Mock approval history - in real app this would come from backend
+  const [approvalHistory] = useState<TAPApprovalHistory[]>([
+    {
+      id: '1',
+      status: 'rascunho',
+      date: new Date().toISOString(),
+      approver: 'Sistema',
+      comments: 'TAP criado'
+    }
+  ]);
+
+  // Calculate completion percentage
+  const completionPercentage = Math.round(
+    (Object.values(completionStatus).filter(Boolean).length / Object.keys(completionStatus).length) * 100
+  );
+
+  // Check if TAP is editable
+  const isEditable = !formData.approval?.status || 
+    formData.approval.status === 'rascunho' || 
+    formData.approval.status === 'rejeitado';
+
+  // Auto-save function
+  const handleAutoSave = useCallback(() => {
+    if (!isEditable || !formData.projectName) return;
+    
+    console.log('Auto-salvamento executado', new Date().toLocaleTimeString());
+    // In real app, this would save to backend
+    toast({
+      title: "Salvamento automático",
+      description: "TAP salvo automaticamente",
+    });
+  }, [formData, isEditable, toast]);
+
+  useEffect(() => {
     if (projectCharter.length > 0) {
       const charter = projectCharter[0];
       setFormData({
@@ -73,7 +117,7 @@ const ProjectCharter = () => {
         approval: charter.approval || null
       });
 
-      // Verificar status de completude
+      // Update completion status
       setCompletionStatus({
         basicInfo: !!(charter.projectName && charter.sponsors && charter.projectManager && charter.startDate && charter.estimatedEndDate),
         objectives: !!(charter.projectObjectives && charter.businessDemand),
@@ -278,6 +322,38 @@ const ProjectCharter = () => {
     setIsEditing(false);
   };
 
+  // New handler functions
+  const handleCreateNewVersion = () => {
+    const newVersion = `${parseFloat(currentVersion) + 0.1}`;
+    setCurrentVersion(newVersion);
+    setIsEditing(true);
+    toast({
+      title: "Nova versão criada",
+      description: `Versão ${newVersion} do TAP criada para edição.`,
+    });
+  };
+
+  const handleViewVersion = (versionId: string) => {
+    toast({
+      title: "Visualizar versão",
+      description: `Visualizando versão ${versionId}`,
+    });
+  };
+
+  const handleDownloadVersion = (versionId: string) => {
+    toast({
+      title: "Download iniciado",
+      description: `Baixando versão ${versionId}`,
+    });
+  };
+
+  const handleCompareVersions = (v1: string, v2: string) => {
+    toast({
+      title: "Comparação de versões",
+      description: `Comparando versões ${v1} e ${v2}`,
+    });
+  };
+
   const handleSendForApproval = () => {
     handleStatusChange('pendente-aprovacao');
     toast({
@@ -324,58 +400,43 @@ const ProjectCharter = () => {
   const isComplete = Object.values(completionStatus).every(status => status);
   const canEdit = !formData.approval?.status || formData.approval.status === 'rascunho' || formData.approval.status === 'rejeitado';
 
+  // If not editing and has charter, show view mode
   if (!isEditing && currentCharter) {
     return (
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">Termo de Abertura do Projeto (TAP)</h1>
-            <div className="flex items-center gap-2 mt-2">
-              {getStatusBadge(currentCharter.approval?.status || 'rascunho')}
-              {isComplete ? (
-                <Badge className="bg-green-100 text-green-800">
-                  <CheckCircle className="h-4 w-4 mr-1" />
-                  TAP Completo
-                </Badge>
-              ) : (
-                <Badge variant="outline" className="text-orange-600">
-                  TAP Incompleto
-                </Badge>
-              )}
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handlePrint}>
-              <Printer className="h-4 w-4 mr-2" />
-              Imprimir
-            </Button>
-            <Button variant="outline" onClick={handleExportPDF}>
-              <Download className="h-4 w-4 mr-2" />
-              PDF
-            </Button>
-            <Button variant="outline" onClick={handleSendEmail}>
-              <Mail className="h-4 w-4 mr-2" />
-              E-mail
-            </Button>
-            {canEdit && (
-              <Button onClick={() => setIsEditing(true)}>
-                <Edit className="h-4 w-4 mr-2" />
-                Editar TAP
-              </Button>
-            )}
-            {currentCharter.approval?.status === 'aprovado' && (
-              <Button onClick={handleStartProject} className="bg-green-600 hover:bg-green-700">
-                Iniciar Projeto
-              </Button>
-            )}
-            {currentCharter.approval?.status === 'aprovado-com-ressalva' && (
-              <Button onClick={handleStartProject} className="bg-orange-600 hover:bg-orange-700">
-                Aceitar e Iniciar
-              </Button>
-            )}
-          </div>
+        <TAPHeader
+          projectName={currentCharter.projectName}
+          status={currentCharter.approval?.status || 'rascunho'}
+          version={currentVersion}
+          isEditable={isEditable}
+          completionPercentage={completionPercentage}
+          onCreateNewVersion={handleCreateNewVersion}
+          onEdit={() => setIsEditing(true)}
+        />
+
+        <AutoSave
+          onSave={handleAutoSave}
+          isEnabled={isEditable}
+          interval={30}
+        />
+
+        {/* Action buttons */}
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={handlePrint}>
+            <Printer className="h-4 w-4 mr-2" />
+            Imprimir
+          </Button>
+          <Button variant="outline" onClick={handleExportPDF}>
+            <Download className="h-4 w-4 mr-2" />
+            PDF
+          </Button>
+          <Button variant="outline" onClick={handleSendEmail}>
+            <Mail className="h-4 w-4 mr-2" />
+            E-mail
+          </Button>
         </div>
 
+        {/* Status alerts */}
         {currentCharter.approval?.status === 'aprovado-com-ressalva' && (
           <Alert className="border-orange-200 bg-orange-50">
             <AlertTriangle className="h-4 w-4 text-orange-600" />
@@ -394,12 +455,10 @@ const ProjectCharter = () => {
           </Alert>
         )}
 
+        {/* Tabs for viewing charter content */}
         <Tabs defaultValue="info" className="w-full">
-          <TabsList className="grid w-full grid-cols-8">
-            <TabsTrigger value="info" className="flex items-center gap-1">
-              <FileText className="h-4 w-4" />
-              Info Básica
-            </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-9">
+            <TabsTrigger value="info">Info Básica</TabsTrigger>
             <TabsTrigger value="objectives">Objetivos</TabsTrigger>
             <TabsTrigger value="scope">Escopo</TabsTrigger>
             <TabsTrigger value="stakeholders">Stakeholders</TabsTrigger>
@@ -407,6 +466,7 @@ const ProjectCharter = () => {
             <TabsTrigger value="team">Equipe</TabsTrigger>
             <TabsTrigger value="signatures">Assinaturas</TabsTrigger>
             <TabsTrigger value="approval">Aprovação</TabsTrigger>
+            <TabsTrigger value="history">Histórico</TabsTrigger>
           </TabsList>
 
           <TabsContent value="info" className="space-y-4">
@@ -453,10 +513,8 @@ const ProjectCharter = () => {
             <div className="grid grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    Objetivos do Projeto
-                    {completionStatus.objectives && <CheckCircle className="h-4 w-4 text-green-600" />}
-                  </CardTitle>
+                  <CardTitle>Objetivos do Projeto</CardTitle>
+                  <p className="text-sm text-muted-foreground">Máximo 1000 caracteres. Seja sucinto.</p>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">{currentCharter.projectObjectives}</p>
@@ -478,10 +536,8 @@ const ProjectCharter = () => {
             <div className="grid grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    O que é o Escopo do Projeto
-                    {completionStatus.scope && <CheckCircle className="h-4 w-4 text-green-600" />}
-                  </CardTitle>
+                  <CardTitle>O que é o Escopo do Projeto</CardTitle>
+                  <p className="text-sm text-muted-foreground">Máximo 1000 caracteres. Seja sucinto.</p>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">{currentCharter.projectScope}</p>
@@ -502,6 +558,7 @@ const ProjectCharter = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Restrições</CardTitle>
+                  <p className="text-sm text-muted-foreground">Máximo 1000 caracteres. Seja sucinto.</p>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">{currentCharter.constraints}</p>
@@ -511,6 +568,7 @@ const ProjectCharter = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Premissas</CardTitle>
+                  <p className="text-sm text-muted-foreground">Máximo 1000 caracteres. Seja sucinto.</p>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">{currentCharter.assumptions}</p>
@@ -523,10 +581,8 @@ const ProjectCharter = () => {
             <div className="grid grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    Interessados (Stakeholders)
-                    {completionStatus.stakeholders && <CheckCircle className="h-4 w-4 text-green-600" />}
-                  </CardTitle>
+                  <CardTitle>Interessados (Stakeholders)</CardTitle>
+                  <p className="text-sm text-muted-foreground">Máximo 1000 caracteres. Seja sucinto.</p>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">{currentCharter.stakeholders}</p>
@@ -536,6 +592,7 @@ const ProjectCharter = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Interface com Projetos Existentes</CardTitle>
+                  <p className="text-sm text-muted-foreground">Máximo 1000 caracteres. Seja sucinto.</p>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">{currentCharter.existingProjectsInterface}</p>
@@ -692,27 +749,48 @@ const ProjectCharter = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="history" className="space-y-4">
+            <VersionHistory
+              history={approvalHistory}
+              currentVersion={currentVersion}
+              onViewVersion={handleViewVersion}
+              onDownloadVersion={handleDownloadVersion}
+              onCompareVersions={handleCompareVersions}
+            />
+          </TabsContent>
         </Tabs>
       </div>
     );
   }
 
+  // Edit mode
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">
-          {currentCharter ? 'Editar' : 'Criar'} Termo de Abertura do Projeto (TAP)
-        </h1>
-      </div>
+      <TAPHeader
+        projectName={formData.projectName || 'Novo TAP'}
+        status={formData.approval?.status || 'rascunho'}
+        version={currentVersion}
+        isEditable={true}
+        completionPercentage={completionPercentage}
+        onCreateNewVersion={handleCreateNewVersion}
+        onEdit={() => {}}
+      />
+
+      <AutoSave
+        onSave={handleAutoSave}
+        isEnabled={true}
+        interval={30}
+      />
 
       <form onSubmit={handleSubmit}>
         <Tabs defaultValue="info" className="w-full">
           <TabsList className="grid w-full grid-cols-8">
-            <TabsTrigger value="info">Info Básica</TabsTrigger>
-            <TabsTrigger value="objectives">Objetivos</TabsTrigger>
-            <TabsTrigger value="scope">Escopo</TabsTrigger>
-            <TabsTrigger value="stakeholders">Stakeholders</TabsTrigger>
-            <TabsTrigger value="budget">Orçamento</TabsTrigger>
+            <TabsTrigger value="info">Info Básica *</TabsTrigger>
+            <TabsTrigger value="objectives">Objetivos *</TabsTrigger>
+            <TabsTrigger value="scope">Escopo *</TabsTrigger>
+            <TabsTrigger value="stakeholders">Stakeholders *</TabsTrigger>
+            <TabsTrigger value="budget">Orçamento *</TabsTrigger>
             <TabsTrigger value="team">Equipe</TabsTrigger>
             <TabsTrigger value="signatures">Assinaturas</TabsTrigger>
             <TabsTrigger value="approval">Aprovação</TabsTrigger>
@@ -726,7 +804,7 @@ const ProjectCharter = () => {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="projectName">Nome do Projeto</Label>
+                    <Label htmlFor="projectName">Nome do Projeto *</Label>
                     <Input
                       id="projectName"
                       value={formData.projectName}
@@ -735,7 +813,7 @@ const ProjectCharter = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="sponsors">Patrocinadores</Label>
+                    <Label htmlFor="sponsors">Patrocinadores *</Label>
                     <Input
                       id="sponsors"
                       value={formData.sponsors}
@@ -744,7 +822,7 @@ const ProjectCharter = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="projectManager">Gerente do Projeto</Label>
+                    <Label htmlFor="projectManager">Gerente do Projeto *</Label>
                     <Input
                       id="projectManager"
                       value={formData.projectManager}
@@ -753,7 +831,7 @@ const ProjectCharter = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="startDate">Data de Início</Label>
+                    <Label htmlFor="startDate">Data de Início *</Label>
                     <Input
                       id="startDate"
                       type="date"
@@ -763,7 +841,7 @@ const ProjectCharter = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="estimatedEndDate">Data Estimada de Conclusão</Label>
+                    <Label htmlFor="estimatedEndDate">Data Estimada de Conclusão *</Label>
                     <Input
                       id="estimatedEndDate"
                       type="date"
@@ -781,8 +859,7 @@ const ProjectCharter = () => {
             <div className="grid grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Objetivos do Projeto</CardTitle>
-                  <p className="text-sm text-muted-foreground">Máximo 1000 caracteres. Seja sucinto.</p>
+                  <CardTitle>Objetivos do Projeto *</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Textarea
@@ -793,16 +870,17 @@ const ProjectCharter = () => {
                     maxLength={1000}
                     required
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {formData.projectObjectives.length}/1000 caracteres
-                  </p>
+                  <CharacterCounter 
+                    current={formData.projectObjectives.length} 
+                    max={1000} 
+                    className="mt-1" 
+                  />
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Demanda do Negócio</CardTitle>
-                  <p className="text-sm text-muted-foreground">Máximo 1000 caracteres. Seja sucinto.</p>
+                  <CardTitle>Demanda do Negócio *</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Textarea
@@ -813,9 +891,11 @@ const ProjectCharter = () => {
                     maxLength={1000}
                     required
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {formData.businessDemand.length}/1000 caracteres
-                  </p>
+                  <CharacterCounter 
+                    current={formData.businessDemand.length} 
+                    max={1000} 
+                    className="mt-1" 
+                  />
                 </CardContent>
               </Card>
             </div>
@@ -952,25 +1032,12 @@ const ProjectCharter = () => {
           </TabsContent>
 
           <TabsContent value="budget" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Orçamento Estimado</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div>
-                  <Label htmlFor="estimatedBudget">Orçamento Estimado (R$)</Label>
-                  <Input
-                    id="estimatedBudget"
-                    type="number"
-                    value={formData.estimatedBudget}
-                    onChange={(e) => setFormData({...formData, estimatedBudget: parseFloat(e.target.value) || 0})}
-                    min="0"
-                    step="0.01"
-                    required
-                  />
-                </div>
-              </CardContent>
-            </Card>
+            <BudgetTab
+              totalBudget={formData.estimatedBudget}
+              onTotalBudgetChange={(value) => setFormData({...formData, estimatedBudget: value})}
+              categories={budgetCategories}
+              onCategoriesChange={setBudgetCategories}
+            />
           </TabsContent>
 
           <TabsContent value="team" className="space-y-4">
