@@ -334,23 +334,28 @@ const ProjectCharter = () => {
   };
 
   const handleViewVersion = (versionId: string) => {
+    // A visualização será feita através do modal no VersionHistory
     toast({
-      title: "Visualizar versão",
-      description: `Visualizando versão ${versionId}`,
+      title: "Abrindo visualização",
+      description: `Carregando versão ${versionId}`,
     });
   };
 
   const handleDownloadVersion = (versionId: string) => {
-    toast({
-      title: "Download iniciado",
-      description: `Baixando versão ${versionId}`,
-    });
+    if (currentCharter) {
+      const { downloadTAPAsPDF } = require('@/utils/tapUtils');
+      downloadTAPAsPDF(currentCharter, versionId);
+      toast({
+        title: "Download iniciado",
+        description: `Baixando versão ${versionId} do TAP`,
+      });
+    }
   };
 
   const handleCompareVersions = (v1: string, v2: string) => {
     toast({
       title: "Comparação de versões",
-      description: `Comparando versões ${v1} e ${v2}`,
+      description: `Comparando versões ${v1} e ${v2} - Funcionalidade em desenvolvimento`,
     });
   };
 
@@ -379,14 +384,21 @@ const ProjectCharter = () => {
   };
 
   const handlePrint = () => {
-    window.print();
+    if (currentCharter) {
+      const { printTAP } = require('@/utils/tapUtils');
+      printTAP(currentCharter, currentVersion);
+    }
   };
 
   const handleExportPDF = () => {
-    toast({
-      title: "Funcionalidade em desenvolvimento",
-      description: "A exportação para PDF será implementada em breve.",
-    });
+    if (currentCharter) {
+      const { downloadTAPAsPDF } = require('@/utils/tapUtils');
+      downloadTAPAsPDF(currentCharter, currentVersion);
+      toast({
+        title: "Download iniciado",
+        description: "TAP será baixado como arquivo HTML (compatível para conversão em PDF)",
+      });
+    }
   };
 
   const handleSendEmail = () => {
@@ -754,6 +766,7 @@ const ProjectCharter = () => {
             <VersionHistory
               history={approvalHistory}
               currentVersion={currentVersion}
+              charter={currentCharter}
               onViewVersion={handleViewVersion}
               onDownloadVersion={handleDownloadVersion}
               onCompareVersions={handleCompareVersions}
