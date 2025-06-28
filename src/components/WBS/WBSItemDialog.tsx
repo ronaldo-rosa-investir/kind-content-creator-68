@@ -7,9 +7,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -22,9 +30,11 @@ import { useProject } from "@/contexts/ProjectContext";
 import { useToast } from "@/hooks/use-toast";
 import { WBSHierarchyManager } from '@/utils/wbsHierarchyUtils';
 import { WBS_ITEM_TYPES } from '@/types/wbs';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { WBSItemHierarchy } from '@/types/wbs';
+import { useForm } from 'react-hook-form';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface WBSItemDialogProps {
   trigger: React.ReactNode;
@@ -56,14 +66,17 @@ export const WBSItemDialog = ({
   const { addWBSItem, updateWBSItem, wbsItems, projectCharter } = useProject();
   const { toast } = useToast();
   const [internalOpen, setInternalOpen] = useState(false);
-  const [formData, setFormData] = useState<FormData>({
-    parentId: wbsItem?.parentId || parentItem?.id || 'root',
-    activity: wbsItem?.activity || '',
-    itemType: wbsItem?.itemType || 'componente',
-    responsible: wbsItem?.responsible || '',
-    estimatedCost: wbsItem?.estimatedCost || 0,
-    description: wbsItem?.description || '',
-    notes: wbsItem?.notes || ''
+
+  const form = useForm<FormData>({
+    defaultValues: {
+      parentId: wbsItem?.parentId || parentItem?.id || 'root',
+      activity: wbsItem?.activity || '',
+      itemType: wbsItem?.itemType || 'componente',
+      responsible: wbsItem?.responsible || '',
+      estimatedCost: wbsItem?.estimatedCost || 0,
+      description: wbsItem?.description || '',
+      notes: wbsItem?.notes || ''
+    }
   });
 
   // Control dialog state
@@ -76,7 +89,7 @@ export const WBSItemDialog = ({
   // Reset form when dialog opens/closes or item changes
   useEffect(() => {
     if (dialogOpen) {
-      setFormData({
+      form.reset({
         parentId: wbsItem?.parentId || parentItem?.id || 'root',
         activity: wbsItem?.activity || '',
         itemType: wbsItem?.itemType || 'componente',
@@ -86,68 +99,39 @@ export const WBSItemDialog = ({
         notes: wbsItem?.notes || ''
       });
     }
-  }, [dialogOpen, wbsItem, parentItem]);
+  }, [dialogOpen, wbsItem, parentItem, form]);
 
   const generateCode = () => {
-    const actualParentId = formData.parentId === 'root' ? null : formData.parentId;
+    const parentId = form.getValues('parentId');
+    const actualParentId = parentId === 'root' ? null : parentId;
     return WBSHierarchyManager.generateNextCode(actualParentId, wbsItems);
   };
 
   const getAvailableParents = () => {
-    const parents = [{ id: 'root', label: `Raiz - ${projectName}` }];
+    const parents = [{ id: 'root', label: `🏠 Raiz - ${projectName}` }];
     
     wbsItems
       .filter(item => wbsItem ? item.id !== wbsItem.id : true)
       .filter(item => {
-        // Prevent circular references
         if (wbsItem && WBSHierarchyManager.hasCircularReference(item.id, wbsItem.id, wbsItems)) {
           return false;
         }
         return true;
       })
       .forEach(item => {
+        const typeInfo = WBS_ITEM_TYPES[item.itemType];
         parents.push({
           id: item.id,
-          label: `${item.code} - ${item.activity}`
+          label: `${typeInfo.icon} ${item.code} - ${item.activity}`
         });
       });
     
     return parents;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validations
-    if (!formData.activity.trim()) {
-      toast({
-        title: "Erro de validação",
-        description: "O nome/atividade é obrigatório.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!formData.responsible.trim()) {
-      toast({
-        title: "Erro de validação",
-        description: "O responsável é obrigatório.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (isNaN(formData.estimatedCost) || formData.estimatedCost < 0) {
-      toast({
-        title: "Erro de validação",
-        description: "O custo deve ser um número válido e positivo.",
-        variant: "destructive"
-      });
-      return;
-    }
-
+  const onSubmit = (data: FormData) => {
     // Check circular reference
-    const actualParentId = formData.parentId === 'root' ? null : formData.parentId;
+    const actualParentId = data.parentId === 'root' ? null : data.parentId;
     
     if (actualParentId && wbsItem && 
         WBSHierarchyManager.hasCircularReference(actualParentId, wbsItem.id, wbsItems)) {
@@ -163,13 +147,13 @@ export const WBSItemDialog = ({
     
     const itemData = {
       code: finalCode,
-      activity: formData.activity,
-      itemType: formData.itemType,
+      activity: data.activity,
+      itemType: data.itemType,
       parentId: actualParentId || undefined,
-      responsible: formData.responsible,
-      estimatedCost: formData.estimatedCost,
-      description: formData.description,
-      notes: formData.notes,
+      responsible: data.responsible,
+      estimatedCost: data.estimatedCost,
+      description: data.description,
+      notes: data.notes,
       phaseId: '',
       daysAfterStart: 0,
       estimatedHours: 0,
@@ -183,13 +167,13 @@ export const WBSItemDialog = ({
       updateWBSItem(wbsItem.id, itemData);
       toast({
         title: "Item EAP atualizado",
-        description: `${finalCode} - ${formData.activity} foi atualizado.`,
+        description: `${finalCode} - ${data.activity} foi atualizado com sucesso.`,
       });
     } else {
       addWBSItem(itemData);
       toast({
         title: "Item EAP criado",
-        description: `${finalCode} - ${formData.activity} foi criado.`,
+        description: `${finalCode} - ${data.activity} foi criado com sucesso.`,
       });
     }
     
@@ -199,10 +183,10 @@ export const WBSItemDialog = ({
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       {trigger}
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {wbsItem ? 'Editar Item EAP' : 'Novo Item EAP'}
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="space-y-3">
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            📊 {wbsItem ? 'Editar Item EAP' : 'Novo Item EAP'}
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger>
@@ -217,121 +201,238 @@ export const WBSItemDialog = ({
               </Tooltip>
             </TooltipProvider>
           </DialogTitle>
-          <DialogDescription>
-            {wbsItem ? 'Edite as informações do item EAP' : 'Crie um novo item na estrutura analítica do projeto'}
+          <DialogDescription className="text-base">
+            {wbsItem 
+              ? 'Edite as informações do item da estrutura analítica do projeto' 
+              : 'Crie um novo item na estrutura analítica do projeto'
+            }
           </DialogDescription>
         </DialogHeader>
+
+        <Alert className="border-blue-200 bg-blue-50">
+          <Info className="h-4 w-4" />
+          <AlertDescription className="text-sm">
+            <strong>Dica:</strong> Organize o trabalho hierarquicamente. Comece com entregas principais e depois detalhe em pacotes de trabalho menores.
+          </AlertDescription>
+        </Alert>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label>Código EAP</Label>
-            <Input
-              value={wbsItem ? wbsItem.code : generateCode()}
-              readOnly={true}
-              disabled={true}
-              className="bg-gray-100 font-mono"
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Row 1: Code and Parent */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormItem>
+                <FormLabel className="text-sm font-semibold">Código EAP</FormLabel>
+                <FormControl>
+                  <Input
+                    value={wbsItem ? wbsItem.code : generateCode()}
+                    readOnly={true}
+                    disabled={true}
+                    className="bg-gray-50 font-mono text-sm border-2"
+                  />
+                </FormControl>
+                <FormDescription className="text-xs">
+                  Código gerado automaticamente
+                </FormDescription>
+              </FormItem>
+
+              <FormField
+                control={form.control}
+                name="parentId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-semibold">Item Pai *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="border-2">
+                          <SelectValue placeholder="Selecione o item pai" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-white border-2 shadow-lg">
+                        {getAvailableParents().map((parent) => (
+                          <SelectItem key={parent.id} value={parent.id} className="hover:bg-gray-50">
+                            {parent.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription className="text-xs">
+                      Onde este item se encaixa na hierarquia
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Row 2: Activity Name (Full Width) */}
+            <FormField
+              control={form.control}
+              name="activity"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-semibold">Nome da Atividade *</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="Ex: Desenvolvimento do Sistema de Vendas"
+                      className="border-2 text-base py-3"
+                    />
+                  </FormControl>
+                  <FormDescription className="text-xs">
+                    Nome claro e descritivo da atividade ou entrega
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div>
-            <Label>Item Pai *</Label>
-            <Select 
-              value={formData.parentId} 
-              onValueChange={(value) => setFormData({ ...formData, parentId: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o item pai" />
-              </SelectTrigger>
-              <SelectContent>
-                {getAvailableParents().map((parent) => (
-                  <SelectItem key={parent.id} value={parent.id}>
-                    {parent.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+            {/* Row 3: Type and Responsible */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="itemType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-semibold">Tipo do Item</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="border-2">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-white border-2 shadow-lg">
+                        {Object.entries(WBS_ITEM_TYPES).map(([key, type]) => (
+                          <SelectItem key={key} value={key} className="hover:bg-gray-50">
+                            <span className="flex items-center gap-2">
+                              {type.icon} {type.label}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription className="text-xs">
+                      Classificação do item na EAP
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="responsible"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-semibold">Responsável *</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="Nome do responsável"
+                        className="border-2"
+                      />
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      Pessoa ou equipe responsável
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-          <div>
-            <Label>Nome/Atividade *</Label>
-            <Input
-              value={formData.activity}
-              onChange={(e) => setFormData({ ...formData, activity: e.target.value })}
-              placeholder="Ex: Desenvolvimento do Backend"
-              required
+            {/* Row 4: Cost (Smaller Width) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="estimatedCost"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-semibold">Custo Estimado (R$)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        {...field}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                        placeholder="0,00"
+                        step="0.01"
+                        min="0"
+                        className="border-2"
+                      />
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      Valor estimado para execução
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Row 5: Description */}
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-semibold">Descrição Detalhada</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      placeholder="Descreva detalhadamente o que deve ser entregue, critérios de aceitação, especificações técnicas..."
+                      rows={4}
+                      className="border-2 resize-none"
+                    />
+                  </FormControl>
+                  <FormDescription className="text-xs">
+                    Informações detalhadas sobre o escopo e critérios
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div>
-            <Label>Tipo</Label>
-            <Select 
-              value={formData.itemType} 
-              onValueChange={(value: ItemType) => setFormData({ ...formData, itemType: value })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(WBS_ITEM_TYPES).map(([key, type]) => (
-                  <SelectItem key={key} value={key}>
-                    {type.icon} {type.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div>
-            <Label>Responsável *</Label>
-            <Input
-              value={formData.responsible}
-              onChange={(e) => setFormData({ ...formData, responsible: e.target.value })}
-              placeholder="Quem vai fazer?"
-              required
+            {/* Row 6: Notes */}
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-semibold">Observações e Riscos</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      placeholder="Riscos identificados, dependências, recursos necessários, observações importantes..."
+                      rows={3}
+                      className="border-2 resize-none"
+                    />
+                  </FormControl>
+                  <FormDescription className="text-xs">
+                    Informações adicionais, riscos e dependências
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div>
-            <Label>Custo Estimado (R$)</Label>
-            <Input
-              type="number"
-              value={formData.estimatedCost}
-              onChange={(e) => setFormData({ ...formData, estimatedCost: Number(e.target.value) })}
-              placeholder="0.00"
-              step="0.01"
-              min="0"
-            />
-          </div>
-
-          <div>
-            <Label>Descrição</Label>
-            <Textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Descrição detalhada da atividade..."
-              rows={3}
-            />
-          </div>
-
-          <div>
-            <Label>Notas</Label>
-            <Textarea
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Observações, riscos, dependências..."
-              rows={2}
-            />
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit">
-              {wbsItem ? 'Atualizar' : 'Criar'} Item
-            </Button>
-          </div>
-        </form>
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3 pt-6 border-t">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setDialogOpen(false)}
+                className="px-6"
+              >
+                Cancelar
+              </Button>
+              <Button 
+                type="submit"
+                className="px-6 bg-blue-600 hover:bg-blue-700"
+              >
+                {wbsItem ? '✅ Atualizar Item' : '➕ Criar Item'}
+              </Button>
+            </div>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
