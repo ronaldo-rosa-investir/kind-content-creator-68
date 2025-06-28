@@ -1,9 +1,5 @@
-import { useState, useEffect } from "react";
-import { useProject } from "@/contexts/ProjectContext";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -11,335 +7,188 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { WBSItem } from "@/types/project";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useProject } from "@/contexts/ProjectContext";
 import { useToast } from "@/hooks/use-toast";
 
 interface WBSItemDialogProps {
   trigger: React.ReactNode;
-  wbsItem?: WBSItem;
-  onSave?: () => void;
+  wbsItem?: any;
 }
 
-const WBSItemDialog = ({ trigger, wbsItem, onSave }: WBSItemDialogProps) => {
-  const { phases, addWBSItem, updateWBSItem } = useProject();
+const WBSItemDialog = ({ trigger, wbsItem }: WBSItemDialogProps) => {
+  const { addWBSItem, updateWBSItem, wbsItems } = useProject();
   const { toast } = useToast();
-  const [open, setOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState({
-    code: "",
-    activity: "",
-    phaseId: "",
-    daysAfterStart: 0,
-    responsible: "",
-    notes: "",
-    requirements: "",
-    risks: "",
-    estimatedHours: 0,
-    actualHours: 0,
-    hourlyRate: 0,
-    estimatedCost: 0,
-    actualCost: 0,
-    contractType: 'horas' as 'horas' | 'valor-fixo' | 'consultoria-projeto',
-    contractValue: 0,
-    contractDuration: 0,
+    code: wbsItem?.code || '',
+    activity: wbsItem?.activity || '',
+    responsible: wbsItem?.responsible || '',
+    estimatedCost: wbsItem?.estimatedCost || 0,
+    description: wbsItem?.description || ''
   });
 
-  useEffect(() => {
-    if (wbsItem) {
-      setFormData({
-        code: wbsItem.code,
-        activity: wbsItem.activity,
-        phaseId: wbsItem.phaseId,
-        daysAfterStart: wbsItem.daysAfterStart,
-        responsible: wbsItem.responsible,
-        notes: wbsItem.notes || "",
-        requirements: wbsItem.requirements || "",
-        risks: wbsItem.risks || "",
-        estimatedHours: wbsItem.estimatedHours,
-        actualHours: wbsItem.actualHours,
-        hourlyRate: wbsItem.hourlyRate,
-        estimatedCost: wbsItem.estimatedCost,
-        actualCost: wbsItem.actualCost,
-        contractType: wbsItem.contractType,
-        contractValue: wbsItem.contractValue || 0,
-        contractDuration: wbsItem.contractDuration || 0,
-      });
-    } else {
-      setFormData({
-        code: "",
-        activity: "",
-        phaseId: "",
-        daysAfterStart: 0,
-        responsible: "",
-        notes: "",
-        requirements: "",
-        risks: "",
-        estimatedHours: 0,
-        actualHours: 0,
-        hourlyRate: 0,
-        estimatedCost: 0,
-        actualCost: 0,
-        contractType: 'horas' as 'horas' | 'valor-fixo' | 'consultoria-projeto',
-        contractValue: 0,
-        contractDuration: 0,
-      });
-    }
-  }, [wbsItem, open]);
-
-  useEffect(() => {
-    const estimated = formData.estimatedHours * formData.hourlyRate;
-    const actual = formData.actualHours * formData.hourlyRate;
-    setFormData(prev => ({
-      ...prev,
-      estimatedCost: estimated,
-      actualCost: actual,
-    }));
-  }, [formData.estimatedHours, formData.actualHours, formData.hourlyRate]);
+  const generateCode = () => {
+    const maxNumber = wbsItems
+      .map(item => {
+        const parts = item.code.split('.');
+        return parts.length === 2 ? parseInt(parts[0]) : 0;
+      })
+      .reduce((max, num) => Math.max(max, num || 0), 0);
+    
+    return `${maxNumber + 1}.0`;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validações
+    if (!formData.activity.trim()) {
+      toast({
+        title: "Erro de validação",
+        description: "O nome/atividade é obrigatório.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!formData.responsible.trim()) {
+      toast({
+        title: "Erro de validação",
+        description: "O responsável é obrigatório.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (isNaN(formData.estimatedCost) || formData.estimatedCost < 0) {
+      toast({
+        title: "Erro de validação",
+        description: "O custo deve ser um número válido.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const finalCode = wbsItem ? formData.code : generateCode();
+    
+    // Verificar código duplicado apenas para novos itens
+    if (!wbsItem && wbsItems.some(item => item.code === finalCode)) {
+      toast({
+        title: "Erro de validação",
+        description: "Código já existe.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const itemData = {
+      code: finalCode,
+      activity: formData.activity,
+      responsible: formData.responsible,
+      estimatedCost: formData.estimatedCost,
+      description: formData.description,
+      itemType: 'projeto' as const,
+      phaseId: '',
+      daysAfterStart: 0,
+      estimatedHours: 0,
+      actualHours: 0,
+      hourlyRate: 0,
+      actualCost: wbsItem?.actualCost || 0,
+      contractType: 'horas' as const
+    };
+
     if (wbsItem) {
-      updateWBSItem(wbsItem.id, formData);
+      updateWBSItem(wbsItem.id, itemData);
       toast({
         title: "Item EAP atualizado",
-        description: "O item foi atualizado com sucesso.",
+        description: `${finalCode} - ${formData.activity} foi atualizado.`,
       });
     } else {
-      addWBSItem(formData);
+      addWBSItem(itemData);
       toast({
         title: "Item EAP criado",
-        description: "O novo item foi adicionado com sucesso.",
+        description: `${finalCode} - ${formData.activity} foi criado.`,
       });
     }
     
-    setOpen(false);
-    onSave?.();
+    setIsOpen(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {wbsItem ? "Editar Item EAP" : "Novo Item EAP"}
+            {wbsItem ? 'Editar Item EAP' : 'Novo Item EAP'}
           </DialogTitle>
         </DialogHeader>
+        
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="code">Código EAP *</Label>
-              <Input
-                id="code"
-                value={formData.code}
-                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                placeholder="Ex: 1.1.1"
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="phaseId">Fase do Projeto *</Label>
-              <Select
-                value={formData.phaseId}
-                onValueChange={(value) => setFormData({ ...formData, phaseId: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione uma fase" />
-                </SelectTrigger>
-                <SelectContent>
-                  {phases.map((phase) => (
-                    <SelectItem key={phase.id} value={phase.id}>
-                      {phase.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div>
+            <Label>Código EAP</Label>
+            <Input
+              value={wbsItem ? formData.code : generateCode()}
+              readOnly={true}
+              disabled={true}
+              className="bg-gray-100"
+            />
           </div>
 
           <div>
-            <Label htmlFor="activity">Atividade *</Label>
+            <Label>Nome/Atividade *</Label>
             <Input
-              id="activity"
               value={formData.activity}
               onChange={(e) => setFormData({ ...formData, activity: e.target.value })}
-              placeholder="Descreva a atividade"
+              placeholder="Ex: Desenvolvimento do Backend"
+              required
+            />
+          </div>
+          
+          <div>
+            <Label>Responsável *</Label>
+            <Input
+              value={formData.responsible}
+              onChange={(e) => setFormData({ ...formData, responsible: e.target.value })}
+              placeholder="Quem vai fazer?"
               required
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="responsible">Responsável *</Label>
-              <Input
-                id="responsible"
-                value={formData.responsible}
-                onChange={(e) => setFormData({ ...formData, responsible: e.target.value })}
-                placeholder="Nome do responsável"
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="daysAfterStart">Dias Após Início</Label>
-              <Input
-                id="daysAfterStart"
-                type="number"
-                value={formData.daysAfterStart}
-                onChange={(e) => setFormData({ ...formData, daysAfterStart: Number(e.target.value) })}
-                min="0"
-              />
-            </div>
-          </div>
-
           <div>
-            <Label htmlFor="contractType">Tipo de Contrato</Label>
-            <Select
-              value={formData.contractType}
-              onValueChange={(value: 'horas' | 'valor-fixo' | 'consultoria-projeto') => 
-                setFormData({ ...formData, contractType: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o tipo de contrato" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="horas">Por Horas</SelectItem>
-                <SelectItem value="valor-fixo">Valor Fixo</SelectItem>
-                <SelectItem value="consultoria-projeto">Consultoria/Projeto</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {formData.contractType !== 'horas' && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="contractValue">Valor do Contrato (R$)</Label>
-                <Input
-                  id="contractValue"
-                  type="number"
-                  value={formData.contractValue}
-                  onChange={(e) => setFormData({ ...formData, contractValue: Number(e.target.value) })}
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-              {formData.contractType === 'consultoria-projeto' && (
-                <div>
-                  <Label htmlFor="contractDuration">Duração (meses)</Label>
-                  <Input
-                    id="contractDuration"
-                    type="number"
-                    value={formData.contractDuration}
-                    onChange={(e) => setFormData({ ...formData, contractDuration: Number(e.target.value) })}
-                    min="0"
-                  />
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="estimatedHours">Horas Estimadas</Label>
-              <Input
-                id="estimatedHours"
-                type="number"
-                value={formData.estimatedHours}
-                onChange={(e) => setFormData({ ...formData, estimatedHours: Number(e.target.value) })}
-                min="0"
-                step="0.5"
-              />
-            </div>
-            <div>
-              <Label htmlFor="actualHours">Horas Reais</Label>
-              <Input
-                id="actualHours"
-                type="number"
-                value={formData.actualHours}
-                onChange={(e) => setFormData({ ...formData, actualHours: Number(e.target.value) })}
-                min="0"
-                step="0.5"
-              />
-            </div>
-            <div>
-              <Label htmlFor="hourlyRate">Valor/Hora (R$)</Label>
-              <Input
-                id="hourlyRate"
-                type="number"
-                value={formData.hourlyRate}
-                onChange={(e) => setFormData({ ...formData, hourlyRate: Number(e.target.value) })}
-                min="0"
-                step="0.01"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Custo Estimado (R$)</Label>
-              <Input
-                value={formData.estimatedCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                disabled
-                className="bg-gray-50"
-              />
-            </div>
-            <div>
-              <Label>Custo Real (R$)</Label>
-              <Input
-                value={formData.actualCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                disabled
-                className="bg-gray-50"
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="notes">Notas</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Adicione notas sobre este item..."
-              rows={3}
+            <Label>Custo Estimado (R$)</Label>
+            <Input
+              type="number"
+              value={formData.estimatedCost}
+              onChange={(e) => setFormData({ ...formData, estimatedCost: Number(e.target.value) })}
+              placeholder="0.00"
+              step="0.01"
+              min="0"
             />
           </div>
 
           <div>
-            <Label htmlFor="requirements">Requisitos</Label>
+            <Label>Notas</Label>
             <Textarea
-              id="requirements"
-              value={formData.requirements}
-              onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
-              placeholder="Descreva os requisitos..."
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Observações, detalhes adicionais..."
               rows={3}
             />
           </div>
 
-          <div>
-            <Label htmlFor="risks">Riscos</Label>
-            <Textarea
-              id="risks"
-              value={formData.risks}
-              onChange={(e) => setFormData({ ...formData, risks: e.target.value })}
-              placeholder="Identifique os riscos..."
-              rows={3}
-            />
-          </div>
-
-          <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
               Cancelar
             </Button>
             <Button type="submit">
-              {wbsItem ? "Atualizar" : "Criar"} Item EAP
+              {wbsItem ? 'Atualizar' : 'Criar'} Item
             </Button>
           </div>
         </form>
