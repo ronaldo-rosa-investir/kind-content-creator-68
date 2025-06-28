@@ -43,6 +43,7 @@ interface ProjectContextType {
   setCurrentView: (view: string) => void;
   openProject: (project: ProjectItem) => void;
   closeProject: () => void;
+  deleteProject: (projectId: number) => void;
   
   // Estado atual do projeto
   phases: ProjectPhase[];
@@ -235,6 +236,16 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const closeProject = () => {
     setActiveProject(null);
     setCurrentView('dashboard');
+  };
+
+  const deleteProject = (projectId: number) => {
+    console.log('Deleting project with ID:', projectId);
+    setProjects(prev => prev.filter(project => project.id !== projectId));
+    
+    // If the deleted project is currently active, close it
+    if (activeProject && activeProject.id === projectId) {
+      closeProject();
+    }
   };
 
   // Load initial data
@@ -668,6 +679,7 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setCurrentView,
       openProject,
       closeProject,
+      deleteProject,
       
       // Estados do projeto
       phases,
