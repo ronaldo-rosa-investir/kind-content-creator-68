@@ -12,6 +12,11 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import {
   Home,
@@ -35,6 +40,11 @@ import {
   Shield,
   Briefcase,
   ArrowLeft,
+  ChevronDown,
+  ClipboardList,
+  Rocket,
+  TrendingUp,
+  FolderCheck,
 } from "lucide-react";
 import { useProject } from "@/contexts/ProjectContext";
 
@@ -47,23 +57,86 @@ const globalNavItems = [
   { title: "Configurações", url: "/config", icon: Settings },
 ];
 
-// Navegação Contextual do Projeto (quando há projeto ativo)
-const projectNavItems = [
-  { title: "Dashboard do Projeto", url: "/dashboard-projeto", icon: BarChart3 },
-  { title: "TAP", url: "/tap", icon: Briefcase },
-  { title: "Ciclo de Vida", url: "/ciclo-vida", icon: Target },
-  { title: "Cronograma", url: "/cronograma", icon: Calendar },
-  { title: "Fases", url: "/fases", icon: Network },
-  { title: "EAP", url: "/eap", icon: ListTodo },
-  { title: "Tarefas", url: "/tarefas", icon: CheckSquare },
-  { title: "Custos", url: "/custos", icon: DollarSign },
-  { title: "Equipe", url: "/equipe", icon: UserCheck },
-  { title: "Dicionário EAP", url: "/dicionario", icon: BookOpen },
-  { title: "Requisitos", url: "/requisitos", icon: FileStack },
-  { title: "Escopo", url: "/escopo", icon: Target },
-  { title: "Validação", url: "/validacao", icon: Shield },
-  { title: "Lições Aprendidas", url: "/licoes", icon: MessageSquare },
-  { title: "Checklist Fechamento", url: "/fechamento", icon: CheckSquare },
+// Estrutura PMBOK para navegação do projeto
+const projectNavSections = [
+  {
+    title: "Dashboard do Projeto",
+    icon: BarChart3,
+    view: "dashboard-projeto",
+    items: []
+  },
+  {
+    title: "TAP",
+    icon: ClipboardList,
+    view: "tap",
+    items: []
+  },
+  {
+    title: "Planejamento",
+    icon: FileText,
+    view: null,
+    items: [
+      { title: "Cronograma", view: "cronograma", icon: Calendar },
+      { title: "EAP", view: "eap", icon: ListTodo },
+      { title: "Dicionário EAP", view: "dicionario", icon: BookOpen },
+      { title: "Escopo", view: "escopo", icon: Target },
+      { title: "Requisitos", view: "requisitos", icon: FileStack },
+      { title: "Plano de Custos", view: "plano-custos", icon: DollarSign },
+      { title: "Plano de Riscos", view: "plano-riscos", icon: AlertTriangle },
+      { title: "Plano de Qualidade", view: "plano-qualidade", icon: Shield },
+      { title: "Plano de Recursos", view: "plano-recursos", icon: Users },
+      { title: "Plano de Comunicações", view: "plano-comunicacoes", icon: MessageSquare },
+      { title: "Plano de Aquisições", view: "plano-aquisicoes", icon: FolderOpen },
+    ]
+  },
+  {
+    title: "Execução",
+    icon: Rocket,
+    view: null,
+    items: [
+      { title: "Tarefas", view: "tarefas", icon: CheckSquare },
+      { title: "Equipe", view: "equipe", icon: UserCheck },
+      { title: "Gestão de Fornecedores", view: "fornecedores", icon: Users },
+      { title: "Registro de Entregas", view: "entregas", icon: FolderCheck },
+    ]
+  },
+  {
+    title: "Monitoramento e Controle",
+    icon: TrendingUp,
+    view: null,
+    items: [
+      { title: "Desempenho (KPIs)", view: "desempenho", icon: BarChart3 },
+      { title: "Custos (Controle)", view: "custos", icon: DollarSign },
+      { title: "Riscos (Controle)", view: "riscos-controle", icon: AlertTriangle },
+      { title: "Gestão de Mudanças", view: "mudancas", icon: Network },
+      { title: "Registro de Problemas", view: "problemas", icon: AlertTriangle },
+      { title: "Controle de Qualidade", view: "qualidade", icon: Shield },
+      { title: "Relatórios do Projeto", view: "relatorios-projeto", icon: FileText },
+    ]
+  },
+  {
+    title: "Comunicações",
+    icon: MessageSquare,
+    view: "comunicacoes",
+    items: []
+  },
+  {
+    title: "Encerramento",
+    icon: Target,
+    view: null,
+    items: [
+      { title: "Checklist de Fechamento", view: "fechamento", icon: CheckSquare },
+      { title: "Lições Aprendidas", view: "licoes", icon: BookOpen },
+      { title: "Relatório Final do Projeto", view: "relatorio-final", icon: FileText },
+      { title: "Aceitação Formal do Cliente", view: "aceitacao", icon: UserCheck },
+    ]
+  },
+  {
+    title: "Documentos",
+    icon: FolderOpen,
+    view: "documentos",
+    items: []
+  }
 ];
 
 export function AppSidebar() {
@@ -71,13 +144,12 @@ export function AppSidebar() {
   const location = useLocation();
   const { activeProject, currentView, closeProject, setCurrentView } = useProject();
   const currentPath = location.pathname;
+  const [expandedSections, setExpandedSections] = useState<string[]>([]);
 
   const isActive = (path: string) => {
     if (activeProject) {
-      // Para contexto de projeto, comparar com a view atual
       return currentView === path.replace('/', '');
     } else {
-      // Para navegação global, comparar URL completa
       return currentPath === path;
     }
   };
@@ -87,14 +159,22 @@ export function AppSidebar() {
 
   const isCollapsed = state === "collapsed";
 
-  const handleNavigation = (path: string) => {
+  const handleNavigation = (view: string) => {
     if (activeProject) {
-      setCurrentView(path.replace('/', ''));
+      setCurrentView(view);
     }
   };
 
   const handleBackToProjects = () => {
     closeProject();
+  };
+
+  const toggleSection = (sectionTitle: string) => {
+    setExpandedSections(prev => 
+      prev.includes(sectionTitle) 
+        ? prev.filter(s => s !== sectionTitle)
+        : [...prev, sectionTitle]
+    );
   };
 
   return (
@@ -123,7 +203,7 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         ) : (
-          // Navegação Contextual do Projeto
+          // Navegação Contextual do Projeto - Estrutura PMBOK
           <>
             <SidebarGroup>
               <SidebarGroupLabel>
@@ -149,15 +229,53 @@ export function AppSidebar() {
               </SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {projectNavItems.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton
-                        onClick={() => handleNavigation(item.url)}
-                        className={getNavClassName(isActive(item.url))}
-                      >
-                        <item.icon className="mr-2 h-4 w-4" />
-                        {!isCollapsed && <span>{item.title}</span>}
-                      </SidebarMenuButton>
+                  {projectNavSections.map((section) => (
+                    <SidebarMenuItem key={section.title}>
+                      {section.items.length === 0 ? (
+                        // Seção sem subitens - navegação direta
+                        <SidebarMenuButton
+                          onClick={() => handleNavigation(section.view!)}
+                          className={getNavClassName(isActive(section.view!))}
+                        >
+                          <section.icon className="mr-2 h-4 w-4" />
+                          {!isCollapsed && <span>{section.title}</span>}
+                        </SidebarMenuButton>
+                      ) : (
+                        // Seção com subitens - collapsible
+                        <Collapsible
+                          open={expandedSections.includes(section.title)}
+                          onOpenChange={() => toggleSection(section.title)}
+                        >
+                          <CollapsibleTrigger asChild>
+                            <SidebarMenuButton className="hover:bg-muted/50">
+                              <section.icon className="mr-2 h-4 w-4" />
+                              {!isCollapsed && (
+                                <>
+                                  <span className="flex-1">{section.title}</span>
+                                  <ChevronDown className={`h-4 w-4 transition-transform ${
+                                    expandedSections.includes(section.title) ? 'rotate-180' : ''
+                                  }`} />
+                                </>
+                              )}
+                            </SidebarMenuButton>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent className="ml-4">
+                            <SidebarMenu>
+                              {section.items.map((item) => (
+                                <SidebarMenuItem key={item.title}>
+                                  <SidebarMenuButton
+                                    onClick={() => handleNavigation(item.view)}
+                                    className={getNavClassName(isActive(item.view))}
+                                  >
+                                    <item.icon className="mr-2 h-3 w-3" />
+                                    {!isCollapsed && <span className="text-sm">{item.title}</span>}
+                                  </SidebarMenuButton>
+                                </SidebarMenuItem>
+                              ))}
+                            </SidebarMenu>
+                          </CollapsibleContent>
+                        </Collapsible>
+                      )}
                     </SidebarMenuItem>
                   ))}
                 </SidebarMenu>

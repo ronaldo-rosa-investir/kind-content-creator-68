@@ -3,7 +3,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { useProject } from "@/contexts/ProjectContext";
 
-// Importar componentes
+// Importar componentes existentes
 import Dashboard from "@/pages/Dashboard";
 import Projects from "@/pages/Projects";
 import Clients from "@/pages/Clients";
@@ -26,6 +26,16 @@ import ScopeValidation from "@/pages/ScopeValidation";
 import LessonsLearned from "@/pages/LessonsLearned";
 import ClosureChecklist from "@/pages/ClosureChecklist";
 
+// Componente placeholder para páginas ainda não implementadas
+const PlaceholderPage = ({ title }: { title: string }) => (
+  <div className="flex items-center justify-center h-64">
+    <div className="text-center">
+      <h2 className="text-2xl font-bold text-gray-900 mb-2">{title}</h2>
+      <p className="text-gray-500">Esta página será implementada em breve.</p>
+    </div>
+  </div>
+);
+
 export default function Layout() {
   const { currentView, activeProject } = useProject();
 
@@ -38,32 +48,65 @@ export default function Layout() {
           return <InternalProjectDashboard />;
         case 'tap':
           return <ProjectCharter />;
-        case 'ciclo-vida':
-          return <ProjectLifecycle />;
         case 'cronograma':
           return <Schedule />;
-        case 'fases':
-          return <Phases />;
         case 'eap':
           return <WBS />;
-        case 'tarefas':
-          return <Tasks />;
-        case 'custos':
-          return <CostManagement />;
-        case 'equipe':
-          return <Team />;
         case 'dicionario':
           return <WBSDictionaryPage />;
-        case 'requisitos':
-          return <Requirements />;
         case 'escopo':
           return <ScopeStatement />;
-        case 'validacao':
-          return <ScopeValidation />;
-        case 'licoes':
-          return <LessonsLearned />;
+        case 'requisitos':
+          return <Requirements />;
+        case 'tarefas':
+          return <Tasks />;
+        case 'equipe':
+          return <Team />;
+        case 'custos':
+          return <CostManagement />;
         case 'fechamento':
           return <ClosureChecklist />;
+        case 'licoes':
+          return <LessonsLearned />;
+        case 'validacao':
+          return <ScopeValidation />;
+        // Páginas do PMBOK ainda não implementadas
+        case 'plano-custos':
+          return <PlaceholderPage title="Plano de Custos" />;
+        case 'plano-riscos':
+          return <PlaceholderPage title="Plano de Riscos" />;
+        case 'plano-qualidade':
+          return <PlaceholderPage title="Plano de Qualidade" />;
+        case 'plano-recursos':
+          return <PlaceholderPage title="Plano de Recursos" />;
+        case 'plano-comunicacoes':
+          return <PlaceholderPage title="Plano de Comunicações" />;
+        case 'plano-aquisicoes':
+          return <PlaceholderPage title="Plano de Aquisições" />;
+        case 'fornecedores':
+          return <PlaceholderPage title="Gestão de Fornecedores" />;
+        case 'entregas':
+          return <PlaceholderPage title="Registro de Entregas" />;
+        case 'desempenho':
+          return <PlaceholderPage title="Desempenho (KPIs)" />;
+        case 'riscos-controle':
+          return <PlaceholderPage title="Riscos (Controle)" />;
+        case 'mudancas':
+          return <PlaceholderPage title="Gestão de Mudanças" />;
+        case 'problemas':
+          return <PlaceholderPage title="Registro de Problemas" />;
+        case 'qualidade':
+          return <PlaceholderPage title="Controle de Qualidade" />;
+        case 'relatorios-projeto':
+          return <PlaceholderPage title="Relatórios do Projeto" />;
+        case 'comunicacoes':
+          return <PlaceholderPage title="Comunicações" />;
+        case 'relatorio-final':
+          return <PlaceholderPage title="Relatório Final do Projeto" />;
+        case 'aceitacao':
+          return <PlaceholderPage title="Aceitação Formal do Cliente" />;
+        case 'documentos':
+          return <PlaceholderPage title="Documentos" />;
         default:
           return <InternalProjectDashboard />;
       }
