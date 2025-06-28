@@ -123,7 +123,7 @@ const EnhancedWBSDialog = ({ trigger, wbsItem }: EnhancedWBSDialogProps) => {
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
             {wbsItem ? 'Editar Item EAP' : 'Novo Item EAP'}
