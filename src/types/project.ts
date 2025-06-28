@@ -16,9 +16,14 @@ export interface WBSItem {
   id: string;
   code: string;
   activity: string;
+  itemType?: 'projeto' | 'entrega' | 'componente' | 'pacote-trabalho';
+  parentId?: string;
   phaseId: string;
   daysAfterStart: number;
   responsible: string;
+  description?: string;
+  deliverables?: string;
+  acceptanceCriteria?: string;
   notes?: string;
   requirements?: string;
   risks?: string;

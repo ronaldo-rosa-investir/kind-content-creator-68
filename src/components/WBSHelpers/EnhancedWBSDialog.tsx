@@ -78,12 +78,17 @@ const EnhancedWBSDialog = ({ trigger, wbsItem }: EnhancedWBSDialogProps) => {
     e.preventDefault();
     
     const finalCode = formData.code || generateCode();
+    const estimatedCost = formData.estimatedHours * formData.hourlyRate;
+    
     const itemData = {
       ...formData,
       code: finalCode,
       contractType: 'horas' as const,
       contractValue: 0,
-      daysAfterStart: 0
+      daysAfterStart: 0,
+      actualHours: wbsItem?.actualHours || 0,
+      estimatedCost: estimatedCost,
+      actualCost: wbsItem?.actualCost || 0
     };
 
     if (wbsItem) {
