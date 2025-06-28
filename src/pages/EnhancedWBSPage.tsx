@@ -31,7 +31,6 @@ import { WBSTree } from "@/components/WBS/WBSTree";
 import { WBSItemDetails } from "@/components/WBS/WBSItemDetails";
 import { WBSStatistics } from "@/components/WBS/WBSStatistics";
 import { WBSItemHierarchy } from '@/types/wbs';
-import WBSGuideModal from "@/components/WBSHelpers/WBSGuideModal";
 
 const EnhancedWBSPage = () => {
   const { wbsItems, deleteWBSItem, projectCharter } = useProject();
@@ -41,7 +40,6 @@ const EnhancedWBSPage = () => {
   const [editingItem, setEditingItem] = useState<WBSItemHierarchy | null>(null);
   const [parentForNewItem, setParentForNewItem] = useState<WBSItemHierarchy | null>(null);
   const [deleteCandidate, setDeleteCandidate] = useState<WBSItemHierarchy | null>(null);
-  const [isExpanded, setIsExpanded] = useState(true);
 
   // Get project name from charter
   const projectName = projectCharter.length > 0 ? projectCharter[0].projectName : 'Projeto';
@@ -50,24 +48,28 @@ const EnhancedWBSPage = () => {
   const hierarchyItems = WBSHierarchyManager.buildHierarchy(wbsItems);
 
   const handleNewItem = () => {
+    console.log('Creating new item');
     setEditingItem(null);
     setParentForNewItem(null);
     setIsDialogOpen(true);
   };
 
   const handleEditItem = (item: WBSItemHierarchy) => {
+    console.log('Editing item:', item.id);
     setEditingItem(item);
     setParentForNewItem(null);
     setIsDialogOpen(true);
   };
 
   const handleAddChild = (parentItem: WBSItemHierarchy) => {
+    console.log('Adding child to:', parentItem.id);
     setEditingItem(null);
     setParentForNewItem(parentItem);
     setIsDialogOpen(true);
   };
 
   const handleDeleteRequest = (item: WBSItemHierarchy) => {
+    console.log('Delete requested for:', item.id);
     if (!WBSHierarchyManager.canDelete(item.id, wbsItems)) {
       toast({
         title: "Não é possível excluir",
@@ -81,6 +83,7 @@ const EnhancedWBSPage = () => {
 
   const confirmDelete = () => {
     if (deleteCandidate) {
+      console.log('Confirming delete for:', deleteCandidate.id);
       deleteWBSItem(deleteCandidate.id);
       toast({
         title: "Item excluído",
@@ -97,12 +100,12 @@ const EnhancedWBSPage = () => {
   };
 
   const handleSelectItem = (item: WBSItemHierarchy | null) => {
+    console.log('Item selected:', item?.id);
     setSelectedItem(item);
   };
 
   const handleExpandAll = () => {
-    setIsExpanded(true);
-    // This would need to be implemented in the tree component
+    console.log('Expand all clicked');
     toast({
       title: "Expandir tudo",
       description: "Funcionalidade será implementada em breve.",
@@ -110,8 +113,7 @@ const EnhancedWBSPage = () => {
   };
 
   const handleCollapseAll = () => {
-    setIsExpanded(false);
-    // This would need to be implemented in the tree component
+    console.log('Collapse all clicked');
     toast({
       title: "Colapsar tudo",
       description: "Funcionalidade será implementada em breve.",
@@ -119,6 +121,7 @@ const EnhancedWBSPage = () => {
   };
 
   const handleExport = () => {
+    console.log('Export clicked');
     toast({
       title: "Exportar EAP",
       description: "Funcionalidade de exportação será implementada em breve.",
@@ -126,10 +129,18 @@ const EnhancedWBSPage = () => {
   };
 
   const handleGenerateSchedule = () => {
+    console.log('Generate schedule clicked');
     toast({
       title: "Gerar Cronograma",
       description: "Funcionalidade será implementada em breve.",
     });
+  };
+
+  const handleDialogClose = () => {
+    console.log('Dialog closing');
+    setIsDialogOpen(false);
+    setEditingItem(null);
+    setParentForNewItem(null);
   };
 
   return (
@@ -144,14 +155,10 @@ const EnhancedWBSPage = () => {
           </div>
         </div>
         <div className="flex gap-2">
-          <WBSGuideModal
-            trigger={
-              <Button variant="outline">
-                <HelpCircle className="h-4 w-4 mr-2" />
-                Guia Rápido
-              </Button>
-            }
-          />
+          <Button variant="outline" onClick={() => console.log('Help clicked')}>
+            <HelpCircle className="h-4 w-4 mr-2" />
+            Guia Rápido
+          </Button>
           <Button onClick={handleNewItem}>
             <Plus className="h-4 w-4 mr-2" />
             Novo Item EAP
@@ -268,7 +275,7 @@ const EnhancedWBSPage = () => {
         wbsItem={editingItem}
         parentItem={parentForNewItem}
         isOpen={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
+        onOpenChange={handleDialogClose}
       />
 
       <AlertDialog open={!!deleteCandidate} onOpenChange={() => setDeleteCandidate(null)}>

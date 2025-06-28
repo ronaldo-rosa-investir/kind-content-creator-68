@@ -51,16 +51,19 @@ const TreeNode: React.FC<TreeNodeProps> = ({
 
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
+    console.log('Edit button clicked for item:', item.id);
     onEditItem(item);
   };
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
+    console.log('Delete button clicked for item:', item.id);
     onDeleteItem(item);
   };
 
   const handleAddChild = (e: React.MouseEvent) => {
     e.stopPropagation();
+    console.log('Add child button clicked for item:', item.id);
     onAddChild(item);
   };
 
@@ -78,7 +81,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
     <div className="select-none">
       <div
         className={cn(
-          "flex items-center gap-2 p-2 rounded-md cursor-pointer hover:bg-gray-50 transition-colors",
+          "group flex items-center gap-2 p-2 rounded-md cursor-pointer hover:bg-gray-50 transition-colors",
           isSelected && "bg-blue-50 border border-blue-200"
         )}
         style={{ marginLeft: `${level * 24}px` }}
@@ -87,7 +90,11 @@ const TreeNode: React.FC<TreeNodeProps> = ({
         {/* Expand/Collapse Icon */}
         <div className="flex items-center justify-center w-4 h-4">
           {hasChildren ? (
-            <button onClick={handleToggle} className="hover:bg-gray-200 rounded p-0.5">
+            <button 
+              onClick={handleToggle} 
+              className="hover:bg-gray-200 rounded p-0.5 flex items-center justify-center"
+              type="button"
+            >
               {isExpanded ? (
                 <ChevronDown className="h-3 w-3" />
               ) : (
@@ -112,22 +119,24 @@ const TreeNode: React.FC<TreeNodeProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-1 group-hover:opacity-100 opacity-0 transition-opacity">
           <Button
             variant="ghost"
             size="sm"
-            className="h-6 w-6 p-0"
+            className="h-6 w-6 p-0 hover:bg-blue-100"
             onClick={handleAddChild}
             title="Adicionar filho"
+            type="button"
           >
             <Plus className="h-3 w-3" />
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="h-6 w-6 p-0"
+            className="h-6 w-6 p-0 hover:bg-green-100"
             onClick={handleEdit}
             title="Editar"
+            type="button"
           >
             <Edit className="h-3 w-3" />
           </Button>
@@ -135,9 +144,10 @@ const TreeNode: React.FC<TreeNodeProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+              className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-100"
               onClick={handleDelete}
               title="Excluir"
+              type="button"
             >
               <Trash2 className="h-3 w-3" />
             </Button>
@@ -145,8 +155,13 @@ const TreeNode: React.FC<TreeNodeProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            className="h-6 w-6 p-0 text-gray-400"
+            className="h-6 w-6 p-0 text-gray-400 hover:bg-gray-100"
             title="Mover (em breve)"
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log('Move functionality not implemented yet');
+            }}
           >
             <Move className="h-3 w-3" />
           </Button>
@@ -195,7 +210,7 @@ export const WBSTree: React.FC<WBSTreeProps> = ({
   }
 
   return (
-    <div className="space-y-1 group">
+    <div className="space-y-1">
       {items.map((item) => (
         <TreeNode
           key={item.id}
