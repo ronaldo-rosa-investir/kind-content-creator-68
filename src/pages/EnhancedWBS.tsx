@@ -81,7 +81,7 @@ const EnhancedWBS = () => {
           <h1 className="text-3xl font-bold">Estrutura Analítica do Projeto (EAP)</h1>
           <div className="flex items-center gap-2 text-muted-foreground">
             <Info className="h-4 w-4" />
-            <span>A EAP organiza seu projeto em pacotes de trabalho hierárquicos para facilitar o gerenciamento</span>
+            <span>ℹ️ A EAP organiza seu projeto em pacotes de trabalho hierárquicos</span>
           </div>
         </div>
         <div className="flex gap-2">
@@ -294,9 +294,9 @@ const EnhancedWBS = () => {
         /* Empty state when no phases exist */
         <div className="text-center py-12">
           <div className="text-6xl mb-4">📋</div>
-          <p className="text-muted-foreground mb-4">Nenhum item da EAP criado ainda</p>
+          <p className="text-muted-foreground mb-4">Nenhum item EAP criado ainda</p>
           <p className="text-sm text-muted-foreground mb-6">
-            Organize seu projeto em pacotes de trabalho hierárquicos
+            ℹ️ A EAP organiza seu projeto em pacotes de trabalho hierárquicos
           </p>
         </div>
       )}

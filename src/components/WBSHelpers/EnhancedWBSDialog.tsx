@@ -41,7 +41,10 @@ const EnhancedWBSDialog = ({ trigger, wbsItem }: EnhancedWBSDialogProps) => {
     acceptanceCriteria: wbsItem?.acceptanceCriteria || '',
     requirements: wbsItem?.requirements || '',
     risks: wbsItem?.risks || '',
-    phaseId: wbsItem?.phaseId || (phases[0]?.id || '')
+    phaseId: wbsItem?.phaseId || (phases[0]?.id || ''),
+    contractType: wbsItem?.contractType || 'horas',
+    contractValue: wbsItem?.contractValue || 0,
+    daysAfterStart: wbsItem?.daysAfterStart || 0
   });
 
   const getItemTypeInfo = (type: string) => {
@@ -78,17 +81,16 @@ const EnhancedWBSDialog = ({ trigger, wbsItem }: EnhancedWBSDialogProps) => {
     e.preventDefault();
     
     const finalCode = formData.code || generateCode();
-    const estimatedCost = formData.estimatedHours * formData.hourlyRate;
+    const estimatedCost = formData.contractType === 'horas' 
+      ? formData.estimatedHours * formData.hourlyRate 
+      : formData.contractValue;
     
     const itemData = {
       ...formData,
       code: finalCode,
-      contractType: 'horas' as const,
-      contractValue: 0,
-      daysAfterStart: 0,
-      actualHours: wbsItem?.actualHours || 0,
       estimatedCost: estimatedCost,
-      actualCost: wbsItem?.actualCost || 0
+      actualCost: wbsItem?.actualCost || 0,
+      actualHours: wbsItem?.actualHours || 0
     };
 
     if (wbsItem) {
@@ -135,6 +137,9 @@ const EnhancedWBSDialog = ({ trigger, wbsItem }: EnhancedWBSDialogProps) => {
                 value={formData.code}
                 onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                 placeholder={generateCode()}
+                readOnly={true}
+                disabled={true}
+                className="bg-gray-100"
               />
             </div>
             
@@ -203,7 +208,7 @@ const EnhancedWBSDialog = ({ trigger, wbsItem }: EnhancedWBSDialogProps) => {
               <Input
                 value={formData.activity}
                 onChange={(e) => setFormData({ ...formData, activity: e.target.value })}
-                placeholder="O que é este item?"
+                placeholder="Ex: Desenvolvimento do Backend"
                 required
               />
             </div>
@@ -225,34 +230,134 @@ const EnhancedWBSDialog = ({ trigger, wbsItem }: EnhancedWBSDialogProps) => {
           </div>
 
           <div>
-            <Label className="flex items-center gap-2 mb-2">
-              Estimativas
-              <WBSItemTooltip content="Previsão de tempo e custo necessários">
+            <Label className="flex items-center gap-2">
+              Dias Após Início
+              <WBSItemTooltip content="Quantos dias após o início do projeto esta atividade deve começar">
                 <Info className="h-4 w-4 text-muted-foreground cursor-help" />
               </WBSItemTooltip>
             </Label>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-sm">Horas</Label>
-                <Input
-                  type="number"
-                  value={formData.estimatedHours}
-                  onChange={(e) => setFormData({ ...formData, estimatedHours: Number(e.target.value) })}
-                  placeholder="0"
-                />
+            <Input
+              type="number"
+              value={formData.daysAfterStart}
+              onChange={(e) => setFormData({ ...formData, daysAfterStart: Number(e.target.value) })}
+              placeholder="0"
+              min="0"
+            />
+          </div>
+
+          <div>
+            <Label className="flex items-center gap-2 mb-3">
+              Tipo de Contrato
+              <WBSItemTooltip content="Escolha como será calculado o custo">
+                <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+              </WBSItemTooltip>
+            </Label>
+            <RadioGroup
+              value={formData.contractType}
+              onValueChange={(value: 'horas' | 'valor-fixo') => 
+                setFormData({ ...formData, contractType: value })}
+              className="grid grid-cols-2 gap-4"
+            >
+              <div className="flex items-center space-x-2 p-3 border rounded-lg">
+                <RadioGroupItem value="horas" id="horas" />
+                <Label htmlFor="horas" className="cursor-pointer">
+                  <div className="font-medium">Por Horas</div>
+                  <div className="text-xs text-muted-foreground">Calculado por horas × valor/hora</div>
+                </Label>
               </div>
-              <div>
-                <Label className="text-sm">Custo por Hora (R$)</Label>
-                <Input
-                  type="number"
-                  value={formData.hourlyRate}
-                  onChange={(e) => setFormData({ ...formData, hourlyRate: Number(e.target.value) })}
-                  placeholder="0.00"
-                  step="0.01"
-                />
+              <div className="flex items-center space-x-2 p-3 border rounded-lg">
+                <RadioGroupItem value="valor-fixo" id="valor-fixo" />
+                <Label htmlFor="valor-fixo" className="cursor-pointer">
+                  <div className="font-medium">Preço Fixo</div>
+                  <div className="text-xs text-muted-foreground">Valor fixo definido</div>
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          {formData.contractType === 'horas' ? (
+            <div>
+              <Label className="flex items-center gap-2 mb-2">
+                Estimativas por Hora
+                <WBSItemTooltip content="Previsão de tempo e custo necessários">
+                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                </WBSItemTooltip>
+              </Label>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label className="text-sm">Horas Estimadas</Label>
+                  <Input
+                    type="number"
+                    value={formData.estimatedHours}
+                    onChange={(e) => setFormData({ ...formData, estimatedHours: Number(e.target.value) })}
+                    placeholder="0"
+                    min="0"
+                    step="0.5"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm">Horas Reais</Label>
+                  <Input
+                    type="number"
+                    value={wbsItem?.actualHours || 0}
+                    placeholder="0"
+                    min="0"
+                    step="0.5"
+                    disabled
+                    className="bg-gray-50"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm">Valor/Hora (R$)</Label>
+                  <Input
+                    type="number"
+                    value={formData.hourlyRate}
+                    onChange={(e) => setFormData({ ...formData, hourlyRate: Number(e.target.value) })}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                  />
+                </div>
+              </div>
+              <div className="mt-2 text-sm text-muted-foreground">
+                Custo estimado: R$ {(formData.estimatedHours * formData.hourlyRate).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
             </div>
-          </div>
+          ) : (
+            <div>
+              <Label className="flex items-center gap-2 mb-2">
+                Custos Fixos
+                <WBSItemTooltip content="Valores fixos definidos para o projeto">
+                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                </WBSItemTooltip>
+              </Label>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm">Custo Estimado (R$)</Label>
+                  <Input
+                    type="number"
+                    value={formData.contractValue}
+                    onChange={(e) => setFormData({ ...formData, contractValue: Number(e.target.value) })}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm">Custo Real (R$)</Label>
+                  <Input
+                    type="number"
+                    value={wbsItem?.actualCost || 0}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                    disabled
+                    className="bg-gray-50"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           {isWorkPackage && (
             <Card>
