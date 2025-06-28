@@ -34,6 +34,18 @@ interface WBSItemDialogProps {
   onOpenChange?: (open: boolean) => void;
 }
 
+type ItemType = 'projeto' | 'entrega' | 'componente' | 'pacote-trabalho';
+
+interface FormData {
+  parentId: string;
+  activity: string;
+  itemType: ItemType;
+  responsible: string;
+  estimatedCost: number;
+  description: string;
+  notes: string;
+}
+
 export const WBSItemDialog = ({ 
   trigger, 
   wbsItem, 
@@ -44,7 +56,7 @@ export const WBSItemDialog = ({
   const { addWBSItem, updateWBSItem, wbsItems, projectCharter } = useProject();
   const { toast } = useToast();
   const [internalOpen, setInternalOpen] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     parentId: wbsItem?.parentId || parentItem?.id || 'root',
     activity: wbsItem?.activity || '',
     itemType: wbsItem?.itemType || 'componente',
@@ -152,7 +164,7 @@ export const WBSItemDialog = ({
     const itemData = {
       code: finalCode,
       activity: formData.activity,
-      itemType: formData.itemType as 'projeto' | 'entrega' | 'componente' | 'pacote-trabalho',
+      itemType: formData.itemType,
       parentId: actualParentId || undefined,
       responsible: formData.responsible,
       estimatedCost: formData.estimatedCost,
@@ -254,7 +266,7 @@ export const WBSItemDialog = ({
             <Label>Tipo</Label>
             <Select 
               value={formData.itemType} 
-              onValueChange={(value) => setFormData({ ...formData, itemType: value })}
+              onValueChange={(value: ItemType) => setFormData({ ...formData, itemType: value })}
             >
               <SelectTrigger>
                 <SelectValue />
