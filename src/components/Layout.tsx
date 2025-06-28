@@ -1,4 +1,3 @@
-
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { useProject } from "@/contexts/ProjectContext";
@@ -25,6 +24,10 @@ import ScopeStatement from "@/pages/ScopeStatement";
 import ScopeValidation from "@/pages/ScopeValidation";
 import LessonsLearned from "@/pages/LessonsLearned";
 import ClosureChecklist from "@/pages/ClosureChecklist";
+import AdvancedSchedule from "@/pages/AdvancedSchedule";
+import CostPlan from "@/pages/CostPlan";
+import RiskPlan from "@/pages/RiskPlan";
+import QualityPlan from "@/pages/QualityPlan";
 
 // Componente placeholder para páginas ainda não implementadas
 const PlaceholderPage = ({ title }: { title: string }) => (
@@ -48,7 +51,7 @@ export default function Layout() {
         case 'tap':
           return <ProjectCharter />;
         case 'cronograma':
-          return <Schedule />;
+          return <AdvancedSchedule />;
         case 'eap':
           return <WBS />;
         case 'dicionario':
@@ -69,13 +72,13 @@ export default function Layout() {
           return <LessonsLearned />;
         case 'validacao':
           return <ScopeValidation />;
-        // Páginas do PMBOK ainda não implementadas
+        // Páginas do PMBOK implementadas
         case 'plano-custos':
-          return <PlaceholderPage title="Plano de Custos" />;
+          return <CostPlan />;
         case 'plano-riscos':
-          return <PlaceholderPage title="Plano de Riscos" />;
+          return <RiskPlan />;
         case 'plano-qualidade':
-          return <PlaceholderPage title="Plano de Qualidade" />;
+          return <QualityPlan />;
         case 'plano-recursos':
           return <PlaceholderPage title="Plano de Recursos" />;
         case 'plano-comunicacoes':
