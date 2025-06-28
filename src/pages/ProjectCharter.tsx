@@ -248,7 +248,7 @@ const ProjectCharter = () => {
           id: formData.approval?.id || Date.now().toString(),
           createdAt: formData.approval?.createdAt || new Date().toISOString(),
           updatedAt: new Date().toISOString()
-        },
+        } as TAPApproval,
         updatedAt: new Date().toISOString()
       });
       toast({
@@ -263,7 +263,7 @@ const ProjectCharter = () => {
           id: Date.now().toString(),
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
-        }
+        } as TAPApproval
       });
       toast({
         title: "TAP criado com sucesso!",
@@ -372,7 +372,6 @@ const ProjectCharter = () => {
           </div>
         </div>
 
-        {/* Alertas baseados no status */}
         {currentCharter.approval?.status === 'aprovado-com-ressalva' && (
           <Alert className="border-orange-200 bg-orange-50">
             <AlertTriangle className="h-4 w-4 text-orange-600" />

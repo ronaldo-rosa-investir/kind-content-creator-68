@@ -1,3 +1,4 @@
+
 export interface ProjectPhase {
   id: string;
   name: string;
@@ -259,11 +260,11 @@ export type TAPStatus = 'rascunho' | 'pendente-aprovacao' | 'aprovado' | 'aprova
 export interface TAPApproval {
   id: string;
   status: TAPStatus;
-  submissionDate?: string;
-  approvalDate?: string;
-  approver?: string;
-  approverComments?: string;
-  conditions?: string; // Ressalvas/Condições
+  submissionDate: string;
+  approvalDate: string;
+  approver: string;
+  approverComments: string;
+  conditions: string;
   createdAt: string;
   updatedAt: string;
 }
